@@ -13,7 +13,7 @@ def _add_obs(ob):
     _obs.append(ob)
 
 def get_obs():
-    return list(obs)
+    return list(_obs)
 
 
 class Observation:
@@ -21,18 +21,31 @@ class Observation:
 
 class Obs_IsPresent(Observation):
     def __init__(self, *, gene=None, time=None, tissue=None):
-        self.gene = gene
+        assert gene
+        assert time is not None
+        assert tissue is not None
+        self.gene_name = gene
         self.time = time
-        self.tissue = None
+        self.tissue_name = tissue
 
     def check(self, state):
         # not applicable
         if state.time != self.time:
             return None
 
-        # applicable! check.
-        tissue_state = state[self.tissue]
-        if gene in tissue_state.genes:
-            return True
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        for g in tissue_state:
+            if g.name == self.gene_name:
+                return True
+        return False
+
+
+def test_observations(state):
+    for ob in get_obs():
+        check = ob.check(state)
+        if check is None:
+            pass
+        elif check:
+            print('passed', ob)
         else:
-            return False
+            print('failed', ob)
