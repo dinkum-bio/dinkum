@@ -19,8 +19,9 @@ def main():
     m = Tissue(name='M')
     x.is_present(where=m, start=1, duration=1)
 
-    t = Timecourse()
-    t.iterate(start=1, stop=5)
+    tc = Timecourse()
+    for tp, ti, state in tc.iterate(start=1, stop=5):
+        print(f"\ttime={tp}, tissue={ti.name}, {[ g.name for g in state ]}")
 
 
 if __name__ == '__main__':

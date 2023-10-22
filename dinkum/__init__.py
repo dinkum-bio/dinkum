@@ -21,11 +21,11 @@ class Timecourse:
                 this_present = set()
                 this_present.update(t.all_present(at=i))
                 this_present.update(next_present)
-                for g in this_present:
-                    print(f"\ttissue={t.name}, g={g.name}")
+
+                yield i, t, this_present
 
                 next_present = set()
                 for r in vfg.get_rules():
                     for g in r.advance(present=this_present):
-                        print('ZZZ', g.name)
+                        #print('ZZZ', g.name)
                         next_present.add(g)
