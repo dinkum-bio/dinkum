@@ -39,6 +39,9 @@ class Obs_IsPresent(Observation):
                 return True
         return False
 
+    def render(self):
+        return f"{self.gene_name} is ON in tissue {self.tissue_name} at time {self.time}"
+
 def check_is_present(*, gene=None, time=None, tissue=None):
     ob = Obs_IsPresent(gene=gene, time=time, tissue=tissue)
     _add_obs(ob)
@@ -65,17 +68,24 @@ class Obs_IsNotPresent(Observation):
                 return False
         return True
 
+    def render(self):
+        return f"{self.gene_name} is NOT ON in tissue {self.tissue_name} at time {self.time}"
+
 def check_is_not_present(*, gene=None, time=None, tissue=None):
     ob = Obs_IsNotPresent(gene=gene, time=time, tissue=tissue)
     _add_obs(ob)
 
 
 def test_observations(state):
+    succeed = True
     for ob in get_obs():
         check = ob.check(state)
         if check is None:
             pass
         elif check:
-            print('passed', ob)
+            print('passed:', ob.render())
         else:
-            print('failed', ob)
+            print('** FAILED:', ob.render())
+            succeed = False
+
+    return succeed
