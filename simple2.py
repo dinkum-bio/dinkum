@@ -6,8 +6,20 @@ import argparse
 from dinkum.vfg import Gene
 from dinkum.vfn import Tissue
 from dinkum import Timecourse
+from dinkum import observations
 
 def main():
+    # establish preconditions
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene='Z', time=2, tissue='M')
+
+    observations.check_is_not_present(gene='Z', time=3, tissue='M')
+
+    # set it all up!
     x = Gene(name='X')
     y = Gene(name='Y')
     z = Gene(name='Z')
@@ -26,6 +38,7 @@ def main():
         for ti in state.tissues:
             present = state[ti]
             print(f"\ttissue={ti.name}, {[ g.name for g in present ]}")
+        observations.test_observations(state)
 
 
 if __name__ == '__main__':
