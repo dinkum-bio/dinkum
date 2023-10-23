@@ -285,3 +285,32 @@ def test_simple_mutual_repression():
 
     # run!
     dinkum.run(1, 5)
+
+
+def test_simple_toggle_switch():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_not_present(gene='X', tissue='M', time=1)
+    observations.check_is_present(gene='X', tissue='M', time=2)
+
+    observations.check_is_never_present(gene='X', tissue='N')
+
+    # set it all up!
+    x = Gene(name='X')          # target of toggle switch
+    t = Gene(name='T')          # toggle switch t.f.
+    cofactor = Gene(name='cofactor')    # janus factor
+
+    x.toggle_repressed(tf=t, cofactor=cofactor)
+
+    # tissue M: t is present, cofactor is not; activate.
+    m = Tissue(name='M')
+    t.is_present(where=m, start=1)
+
+    # tissue N: t is present, along with cofactor; repress.
+    n = Tissue(name='N')
+    t.is_present(where=n, start=1)
+    cofactor.is_present(where=n, start=1)
+
+    # run!
+    dinkum.run(1, 5)

@@ -57,6 +57,20 @@ class Interaction_And(Interactions):
             yield self.dest
 
 
+class Interaction_ToggleRepressed(Interactions):
+    def __init__(self, *, tf=None, cofactor=None, dest=None):
+        self.tf = tf
+        self.cofactor = cofactor
+        self.dest = dest
+
+    def advance(self, *, present=[]):
+        # tf has to be present...
+        if self.tf in present:
+            # if cofactor is present, repress.
+            if self.cofactor not in present:
+                yield self.dest
+
+
 class Gene:
     def __init__(self, *, name=None):
         assert name
@@ -65,7 +79,6 @@ class Gene:
     def activated_by(self, *, source=None):
         ix = Interaction_Activates(source=source, dest=self)
         _add_rule(ix)
-    
 
     def and_not(self, *, activator=None, repressor=None):
         ix = Interaction_AndNot(source=activator, repressor=repressor,
@@ -74,6 +87,11 @@ class Gene:
 
     def activated_by_and(self, *, sources):
         ix = Interaction_And(sources=sources, dest=self)
+        _add_rule(ix)
+
+    def toggle_repressed(self, *, tf=None, cofactor=None):
+        ix = Interaction_ToggleRepressed(tf=tf, cofactor=cofactor,
+                                         dest=self)
         _add_rule(ix)
 
     def is_present(self, *, where=None, start=None, duration=None):
