@@ -259,3 +259,29 @@ def test_simple_incoherent_feed_forward_2_tissues():
 
     # run!
     dinkum.run(1, 5)
+
+
+def test_simple_mutual_repression():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_never_present(gene='X', tissue='N')
+    observations.check_is_never_present(gene='Y', tissue='M')
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    a = Gene(name='A')
+    b = Gene(name='B')
+
+    x.and_not(activator=a, repressor=y)
+    y.and_not(activator=b, repressor=x)
+
+    m = Tissue(name='M')
+    a.is_present(where=m, start=1)
+
+    n = Tissue(name='N')
+    b.is_present(where=n, start=1)
+
+    # run!
+    dinkum.run(1, 5)
