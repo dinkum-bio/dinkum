@@ -79,6 +79,30 @@ def check_is_not_present(*, gene=None, time=None, tissue=None):
     _add_obs(ob)
 
 
+
+class Obs_IsNeverPresent(Observation):
+    def __init__(self, *, gene=None, tissue=None):
+        assert gene
+        assert tissue is not None
+        self.gene_name = gene
+        self.tissue_name = tissue
+
+    def check(self, state):
+        # not applicable
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        for g in tissue_state:
+            if g.name == self.gene_name:
+                return False
+        return True
+
+    def render(self):
+        return f"{self.gene_name} is NEVER ON in tissue {self.tissue_name}"
+
+def check_is_never_present(*, gene=None, tissue=None):
+    ob = Obs_IsNeverPresent(gene=gene, tissue=tissue)
+    _add_obs(ob)
+
+
 def test_observations(state):
     succeed = True
     for ob in get_obs():

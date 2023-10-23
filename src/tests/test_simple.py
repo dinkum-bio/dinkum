@@ -132,6 +132,33 @@ def test_simple_multiple_tissues():
     dinkum.run(1, 5)
 
 
+def test_simple_positive_feedback():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_present(gene='Y', time=2, tissue='M')
+
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    y.activated_by(source=x)
+    x.activated_by(source=y)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1, duration=1)
+
+    # run!
+    dinkum.run(1, 5)
+
+
 def test_simple_feed_forward():
     dinkum.reset()
 
@@ -158,6 +185,77 @@ def test_simple_feed_forward():
 
     m = Tissue(name='M')
     x.is_present(where=m, start=1)
+
+    # run!
+    dinkum.run(1, 5)
+
+
+def test_simple_incoherent_feed_forward():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+    observations.check_is_not_present(gene='Z', time=1, tissue='M')
+
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene='Z', time=2, tissue='M')
+
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene='Z', time=3, tissue='M')
+
+    observations.check_is_present(gene='X', time=4, tissue='M')
+    observations.check_is_present(gene='Y', time=4, tissue='M')
+    observations.check_is_not_present(gene='Z', time=4, tissue='M')
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    z = Gene(name='Z')
+
+    y.activated_by(source=x)
+    z.and_not(activator=x, repressor=y)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1)
+
+    # run!
+    dinkum.run(1, 5)
+
+
+def test_simple_incoherent_feed_forward_2_tissues():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_not_present(gene='Z', time=1, tissue='M')
+    observations.check_is_present(gene='Z', time=2, tissue='M')
+    observations.check_is_present(gene='Z', time=3, tissue='M')
+    observations.check_is_present(gene='Z', time=4, tissue='M')
+
+    observations.check_is_never_present(gene='Y', tissue='M')
+
+    observations.check_is_not_present(gene='Z', time=1, tissue='N')
+    observations.check_is_present(gene='Z', time=2, tissue='N')
+    observations.check_is_not_present(gene='Z', time=3, tissue='N')
+    observations.check_is_not_present(gene='Z', time=4, tissue='N')
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    z = Gene(name='Z')
+    s = Gene(name='S')          # switches spec states b/t tissues M and N
+
+    y.activated_by_and(sources=[x, s])
+    z.and_not(activator=x, repressor=y)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1)
+
+    m = Tissue(name='N')
+    x.is_present(where=m, start=1)
+    s.is_present(where=m, start=1)
 
     # run!
     dinkum.run(1, 5)
