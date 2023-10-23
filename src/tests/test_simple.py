@@ -45,7 +45,6 @@ def test_activation():
     y = Gene(name='Y')
 
     y.activated_by(source=x)
-    x.activated_by(source=y)
 
     m = Tissue(name='M')
     x.is_present(where=m, start=1)
@@ -79,12 +78,11 @@ def test_simple_repression():
     z = Gene(name='Z')
 
     y.activated_by(source=x)
-    x.activated_by(source=y)
 
     z.and_not(activator=x, repressor=y)
 
     m = Tissue(name='M')
-    x.is_present(where=m, start=1, duration=1)
+    x.is_present(where=m, start=1)
 
     # run!
     dinkum.run(1, 5)
@@ -94,39 +92,41 @@ def test_simple_multiple_tissues():
     dinkum.reset()
 
     ## tissue M
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-
     observations.check_is_present(gene='X', time=2, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
-    observations.check_is_present(gene='Z', time=2, tissue='M')
+    observations.check_is_never_present(gene='Y', tissue='M')
 
-    observations.check_is_not_present(gene='Z', time=3, tissue='M')
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Z', time=3, tissue='M')
 
     ## tissue N
-    observations.check_is_present(gene='Y', time=1, tissue='N')
-    observations.check_is_not_present(gene='X', time=1, tissue='N')
-    observations.check_is_present(gene='X', time=2, tissue='N')
     observations.check_is_present(gene='Y', time=2, tissue='N')
+    observations.check_is_present(gene='X', time=2, tissue='N')
+    observations.check_is_present(gene='X', time=3, tissue='N')
+    observations.check_is_present(gene='Y', time=3, tissue='N')
+    observations.check_is_never_present(gene='Z', tissue='N')
+
 
     # set it all up!
 
     ## VFG
+    a = Gene(name='A')
+    b = Gene(name='B')
+
     x = Gene(name='X')
     y = Gene(name='Y')
     z = Gene(name='Z')
 
-    y.activated_by(source=x)
-    x.activated_by(source=y)
-
+    x.activated_by(source=a)
+    y.activated_by(source=b)
     z.and_not(activator=x, repressor=y)
 
     ## VFN
     m = Tissue(name='M')
-    x.is_present(where=m, start=1, duration=1)
+    a.is_present(where=m, start=1)
 
     n = Tissue(name='N')
-    y.is_present(where=n, start=1, duration=1)
+    a.is_present(where=n, start=1)
+    b.is_present(where=n, start=1)
 
     # run!
     dinkum.run(1, 5)
@@ -136,24 +136,25 @@ def test_simple_positive_feedback():
     dinkum.reset()
 
     # establish preconditions
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-
     observations.check_is_present(gene='X', time=2, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
 
     observations.check_is_present(gene='X', time=3, tissue='M')
     observations.check_is_present(gene='Y', time=3, tissue='M')
 
+    observations.check_is_present(gene='X', time=4, tissue='M')
+    observations.check_is_present(gene='Y', time=4, tissue='M')
+
     # set it all up!
+    a = Gene(name='A')
     x = Gene(name='X')
     y = Gene(name='Y')
 
     y.activated_by(source=x)
-    x.activated_by(source=y)
+    x.activated_or(sources=[a, y])
 
     m = Tissue(name='M')
-    x.is_present(where=m, start=1, duration=1)
+    a.is_present(where=m, start=1, duration=2)
 
     # run!
     dinkum.run(1, 5)

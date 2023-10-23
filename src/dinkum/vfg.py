@@ -31,11 +31,36 @@ class Interaction_Activates(Interactions):
         self.src = source
         self.dest = dest
 
-    def advance(self, *, present=[]):
-        if self.src in present:
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        this_active = state[tissue]
+        if self.src in this_active:
             yield self.dest, 1
         else:
             yield self.dest, 0
+
+
+class Interaction_Or(Interactions):
+    def __init__(self, *, sources=None, dest=None):
+        for g in sources:
+            assert isinstance(g, Gene)
+        assert isinstance(dest, Gene)
+        self.sources = sources
+        self.dest = dest
+
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        this_active = state[tissue]
+        is_active = 0
+        for g in self.sources:
+            if g in this_active:
+                is_active = 1
+
+        yield self.dest, is_active
 
 
 class Interaction_AndNot(Interactions):
@@ -44,8 +69,12 @@ class Interaction_AndNot(Interactions):
         self.repressor = repressor
         self.dest = dest
 
-    def advance(self, *, present=[]):
-        if self.src in present and not self.repressor in present:
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        this_active = state[tissue]
+        if self.src in this_active and not self.repressor in this_active:
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -56,8 +85,12 @@ class Interaction_And(Interactions):
         self.sources = sources
         self.dest = dest
 
-    def advance(self, *, present=[]):
-        if all([ g in present for g in self.sources ]):
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        this_active = state[tissue]
+        if all([ g in this_active for g in self.sources ]):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -69,12 +102,16 @@ class Interaction_ToggleRepressed(Interactions):
         self.cofactor = cofactor
         self.dest = dest
 
-    def advance(self, *, present=[]):
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        this_active = state[tissue]
         activity = 0
         # tf has to be present...
-        if self.tf in present:
+        if self.tf in this_active:
             # if cofactor is present, repress.
-            if self.cofactor not in present:
+            if self.cofactor not in this_active:
                 activity = 1
 
         yield self.dest, activity
@@ -85,8 +122,15 @@ class Gene:
         assert name
         self.name = name
 
+    def active(self):           # present = active
+        return 1
+
     def activated_by(self, *, source=None):
         ix = Interaction_Activates(source=source, dest=self)
+        _add_rule(ix)
+
+    def activated_or(self, *, sources=None):
+        ix = Interaction_Or(sources=sources, dest=self)
         _add_rule(ix)
 
     def and_not(self, *, activator=None, repressor=None):

@@ -40,5 +40,5 @@ class Tissue:
             if at >= start:
                 if duration is None:
                     yield gene
-                elif at <= start + duration:
+                elif at < start + duration:
                     yield gene

@@ -80,7 +80,7 @@ class Timecourse:
         for t in tissues:
             print(f"\ttissue {t.name}")
 
-        # initialize state at start
+        # initialize state at start for all tissues
         this_state = State(tissues=tissues, time=start)
         for t in tissues:
             this_active = GeneActivity()
@@ -89,6 +89,7 @@ class Timecourse:
 
             this_state[t] = this_active
 
+        # advance one tick at a time
         for i in range(start + 1, stop + 1):
             yield this_state
             next_state = State(tissues=tissues, time=i)
@@ -97,16 +98,28 @@ class Timecourse:
                 this_active = this_state[t]
 
                 next_active = GeneActivity()
-                for r in vfg.get_rules():
-                    for g, activity in r.advance(present=this_active):
-                        next_active.set_activity(gene=g, active=activity)
 
-                    for g in t.all_active(at=i):
-                        next_active.set_activity(gene=g, active=1)
+                # bring in maternal/always active
+                seen = set()
+                for g in t.all_active(at=i):
+                    next_active.set_activity(gene=g, active=1)
+                    seen.add(g.name)
+
+                for r in vfg.get_rules():
+                    # advance state of all genes based on last state
+                    for g, activity in r.advance(state=this_state,
+                                                 tissue=t):
+                        if g.name in seen:
+                            raise DinkumException(f"multiple rules containing {g.name}")
+                        next_active.set_activity(gene=g, active=activity)
+                        seen.add(g.name)
+
 
                 next_state[t] = next_active
 
+            # advance => next state
             this_state = next_state
+
 
 def run(start, stop):
     # run time course
