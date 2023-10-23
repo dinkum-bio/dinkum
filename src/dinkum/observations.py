@@ -15,6 +15,9 @@ def _add_obs(ob):
 def get_obs():
     return list(_obs)
 
+def reset():
+    global _obs
+    _obs = []
 
 class Observation:
     pass

@@ -1,8 +1,22 @@
 #
 from . import vfg
 from . import vfn
+from . import observations
 
 import itertools
+
+class DinkumException(Exception):
+    pass
+
+class DinkumObservationFailed(DinkumException):
+    pass
+
+
+def reset():
+    vfg.reset()
+    vfn.reset()
+    observations.reset()
+
 
 class State:
     def __init__(self, *, tissues=None, time=None):
@@ -62,3 +76,14 @@ class Timecourse:
                 next_state[t] = next_present
 
             this_state = next_state
+
+def run(start, stop):
+    # run time course
+    tc = Timecourse()
+    for state in tc.iterate(start=start, stop=stop):
+        print(f"time={state.time}")
+        for ti in state.tissues:
+            present = state[ti]
+            print(f"\ttissue={ti.name}, {[ g.name for g in present ]}")
+        if not observations.test_observations(state):
+            raise DinkumObservationFailed(state.time)

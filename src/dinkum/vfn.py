@@ -11,6 +11,11 @@ def _add_tissue(t):
 def get_tissues():
     return list(_tissues)
 
+def reset():
+    global _tissues
+    _tissues = []
+
+
 class Tissue:
     def __init__(self, *, name=None):
         assert name

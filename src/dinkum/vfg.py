@@ -15,6 +15,10 @@ def _add_rule(ix):
 def get_rules():
     return list(_rules)
 
+def reset():
+    global _rules
+    _rules = []
+
 
 class Interactions:
     pass
