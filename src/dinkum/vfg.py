@@ -117,6 +117,26 @@ class Interaction_ToggleRepressed(Interactions):
         yield self.dest, activity
 
 
+class Interaction_Ligand(Interactions):
+    def __init__(self, *, activator=None, source=None, dest=None):
+        self.activator = activator
+        self.source = source
+        self.dest = dest
+
+    def advance(self, *, state=None, tissue=None):
+        assert state
+        assert tissue
+
+        activity = 0
+        if self.activator in state[tissue]:
+            for neighbor in tissue.neighbors:
+                neighbor_active = state[neighbor]
+                if self.source in neighbor_active:
+                    activity = 1
+
+        yield self.dest, activity
+
+
 class Gene:
     def __init__(self, *, name=None):
         assert name
@@ -154,8 +174,10 @@ class Gene:
 
 
 class Receptor(Gene):
-    def __init__(self, *, name=None, ligand=None):
+    def __init__(self, *, name=None):
         assert name
-        assert ligand
         self.name = name
-        self.ligand = ligand
+
+    def ligand(self, *, activator=None, source=None):
+        ix = Interaction_Ligand(activator=activator, source=source, dest=self)
+        _add_rule(ix)
