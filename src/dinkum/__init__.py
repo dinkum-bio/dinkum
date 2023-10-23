@@ -18,6 +18,33 @@ def reset():
     observations.reset()
 
 
+class GeneActivity:
+    def __init__(self):
+        self.genes_by_name = {}
+
+    def set_activity(self, *, gene=None, active=None):
+        assert gene
+        assert active is not None
+        self.genes_by_name[gene.name] = active
+
+    def is_active(self, gene_name):
+        return self.genes_by_name.get(gene_name, False)
+
+    def __contains__(self, gene):
+        return self.is_active(gene.name)
+
+    def report_activity(self):
+        rl = []
+        for k, v in sorted(self.genes_by_name.items()):
+            if v:
+                v = 1
+            else:
+                v = 0
+            rl.append(f"{k}={v}")
+
+        return rl
+
+
 class State:
     def __init__(self, *, tissues=None, time=None):
         assert tissues is not None
@@ -29,7 +56,8 @@ class State:
 
     def __setitem__(self, tissue, genes):
         assert tissue in self._tissues
-        self._tissues_by_name[tissue.name] = set(genes)
+        assert isinstance(genes, GeneActivity)
+        self._tissues_by_name[tissue.name] = genes
 
     def __getitem__(self, tissue):
         return self._tissues_by_name[tissue.name]
@@ -55,25 +83,28 @@ class Timecourse:
         # initialize state at start
         this_state = State(tissues=tissues, time=start)
         for t in tissues:
-            this_present = set()
-            this_present.update(t.all_present(at=start))
+            this_active = GeneActivity()
+            for g in t.all_active(at=start):
+                this_active.set_activity(gene=g, active=True)
 
-            this_state[t] = this_present
+            this_state[t] = this_active
 
         for i in range(start + 1, stop + 1):
             yield this_state
             next_state = State(tissues=tissues, time=i)
 
             for t in tissues:
-                this_present = this_state[t]
+                this_active = this_state[t]
 
-                next_present = set()
+                next_active = GeneActivity()
                 for r in vfg.get_rules():
-                    for g in r.advance(present=this_present):
-                        next_present.add(g)
-                    next_present.update(t.all_present(at=i))
+                    for g, activity in r.advance(present=this_active):
+                        next_active.set_activity(gene=g, active=activity)
 
-                next_state[t] = next_present
+                    for g in t.all_active(at=i):
+                        next_active.set_activity(gene=g, active=1)
+
+                next_state[t] = next_active
 
             this_state = next_state
 
@@ -84,6 +115,6 @@ def run(start, stop):
         print(f"time={state.time}")
         for ti in state.tissues:
             present = state[ti]
-            print(f"\ttissue={ti.name}, {[ g.name for g in present ]}")
+            print(f"\ttissue={ti.name}, {present.report_activity()}")
         if not observations.test_observations(state):
             raise DinkumObservationFailed(state.time)

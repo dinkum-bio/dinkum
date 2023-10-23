@@ -21,15 +21,20 @@ class Tissue:
         assert name
         self.name = name
         self.present = []
+        self.neighbors = set()
 
         _add_tissue(self)
 
-    def add(self, *, gene=None, start=None, duration=None):
+    def add_gene(self, *, gene=None, start=None, duration=None):
         assert gene
         assert start is not None
         self.present.append((gene, start, duration))
 
-    def all_present(self, *, at=None):
+    def add_neighbor(self, *, neighbor=None):
+        assert neighbor
+        self.neighbors.add(neighbor)
+
+    def all_active(self, *, at=None):
         assert at is not None
         for gene, start, duration in self.present:
             if at >= start:

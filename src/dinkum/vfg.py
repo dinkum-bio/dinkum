@@ -33,7 +33,9 @@ class Interaction_Activates(Interactions):
 
     def advance(self, *, present=[]):
         if self.src in present:
-            yield self.dest
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_AndNot(Interactions):
@@ -44,7 +46,9 @@ class Interaction_AndNot(Interactions):
 
     def advance(self, *, present=[]):
         if self.src in present and not self.repressor in present:
-            yield self.dest
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_And(Interactions):
@@ -54,7 +58,9 @@ class Interaction_And(Interactions):
 
     def advance(self, *, present=[]):
         if all([ g in present for g in self.sources ]):
-            yield self.dest
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_ToggleRepressed(Interactions):
@@ -64,11 +70,14 @@ class Interaction_ToggleRepressed(Interactions):
         self.dest = dest
 
     def advance(self, *, present=[]):
+        activity = 0
         # tf has to be present...
         if self.tf in present:
             # if cofactor is present, repress.
             if self.cofactor not in present:
-                yield self.dest
+                activity = 1
+
+        yield self.dest, activity
 
 
 class Gene:
@@ -97,4 +106,12 @@ class Gene:
     def is_present(self, *, where=None, start=None, duration=None):
         assert where
         assert start
-        where.add(gene=self, start=start, duration=duration)
+        where.add_gene(gene=self, start=start, duration=duration)
+
+
+class Receptor(Gene):
+    def __init__(self, *, name=None, ligand=None):
+        assert name
+        assert ligand
+        self.name = name
+        self.ligand = ligand

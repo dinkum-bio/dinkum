@@ -37,10 +37,7 @@ class Obs_IsPresent(Observation):
             return None
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        for g in tissue_state:
-            if g.name == self.gene_name:
-                return True
-        return False
+        return tissue_state.is_active(gene_name=self.gene_name)
 
     def render(self):
         return f"{self.gene_name} is ON in tissue {self.tissue_name} at time {self.time}"
@@ -66,10 +63,7 @@ class Obs_IsNotPresent(Observation):
             return None
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        for g in tissue_state:
-            if g.name == self.gene_name:
-                return False
-        return True
+        return not tissue_state.is_active(gene_name=self.gene_name)
 
     def render(self):
         return f"{self.gene_name} is NOT ON in tissue {self.tissue_name} at time {self.time}"
@@ -88,12 +82,8 @@ class Obs_IsNeverPresent(Observation):
         self.tissue_name = tissue
 
     def check(self, state):
-        # not applicable
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        for g in tissue_state:
-            if g.name == self.gene_name:
-                return False
-        return True
+        return not tissue_state.is_active(gene_name=self.gene_name)
 
     def render(self):
         return f"{self.gene_name} is NEVER ON in tissue {self.tissue_name}"
