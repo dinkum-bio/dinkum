@@ -32,23 +32,28 @@ class Interaction_Activates(Interactions):
         self.dest = dest
 
     def advance(self, *, present=[]):
-        #print('XXX', self.src.name, self.dest.name, [p.name for p in present])
         if self.src in present:
             yield self.dest
 
 
 class Interaction_AndNot(Interactions):
     def __init__(self, *, source=None, repressor=None, dest=None):
-        assert isinstance(source, Gene)
-        assert isinstance(repressor, Gene)
-        assert isinstance(dest, Gene)
         self.src = source
         self.repressor = repressor
         self.dest = dest
 
     def advance(self, *, present=[]):
-        #print('XXX', self.src.name, self.dest.name, [p.name for p in present])
         if self.src in present and not self.repressor in present:
+            yield self.dest
+
+
+class Interaction_And(Interactions):
+    def __init__(self, *, sources=None, dest=None):
+        self.sources = sources
+        self.dest = dest
+
+    def advance(self, *, present=[]):
+        if all([ g in present for g in self.sources ]):
             yield self.dest
 
 
@@ -58,18 +63,17 @@ class Gene:
         self.name = name
 
     def activated_by(self, *, source=None):
-        assert isinstance(source, Gene)
-
         ix = Interaction_Activates(source=source, dest=self)
         _add_rule(ix)
     
 
     def and_not(self, *, activator=None, repressor=None):
-        assert isinstance(repressor, Gene)
-        assert isinstance(activator, Gene)
-
         ix = Interaction_AndNot(source=activator, repressor=repressor,
                                 dest=self)
+        _add_rule(ix)
+
+    def activated_by_and(self, *, sources):
+        ix = Interaction_And(sources=sources, dest=self)
         _add_rule(ix)
 
     def is_present(self, *, where=None, start=None, duration=None):
