@@ -118,10 +118,10 @@ class Interaction_ToggleRepressed(Interactions):
 
 
 class Interaction_Ligand(Interactions):
-    def __init__(self, *, activator=None, source=None, dest=None):
+    def __init__(self, *, activator=None, ligand=None, receptor=None):
         self.activator = activator
-        self.source = source
-        self.dest = dest
+        self.ligand = ligand
+        self.receptor = receptor
 
     def advance(self, *, state=None, tissue=None):
         assert state
@@ -129,12 +129,14 @@ class Interaction_Ligand(Interactions):
 
         activity = 0
         if self.activator in state[tissue]:
+            #print(f'XXX {self.receptor.name} is present in {tissue.name} b/c {self.activator.name} is active')
             for neighbor in tissue.neighbors:
                 neighbor_active = state[neighbor]
-                if self.source in neighbor_active:
+                if self.ligand in neighbor_active:
+                    #print(f'XXX {self.receptor.name} is ACTIVE in {tissue.name} b/c {self.ligand.name} is in {neighbor.name}')
                     activity = 1
 
-        yield self.dest, activity
+        yield self.receptor, activity
 
 
 class Gene:
@@ -178,6 +180,6 @@ class Receptor(Gene):
         assert name
         self.name = name
 
-    def ligand(self, *, activator=None, source=None):
-        ix = Interaction_Ligand(activator=activator, source=source, dest=self)
+    def ligand(self, *, activator=None, ligand=None):
+        ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)

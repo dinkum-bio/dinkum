@@ -93,6 +93,25 @@ def check_is_never_present(*, gene=None, tissue=None):
     _add_obs(ob)
 
 
+class Obs_IsAlwaysPresent(Observation):
+    def __init__(self, *, gene=None, tissue=None):
+        assert gene
+        assert tissue is not None
+        self.gene_name = gene
+        self.tissue_name = tissue
+
+    def check(self, state):
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        return tissue_state.is_active(gene_name=self.gene_name)
+
+    def render(self):
+        return f"{self.gene_name} is ALWAYS ON in tissue {self.tissue_name}"
+
+def check_is_always_present(*, gene=None, tissue=None):
+    ob = Obs_IsAlwaysPresent(gene=gene, tissue=tissue)
+    _add_obs(ob)
+
+
 def test_observations(state):
     succeed = True
     for ob in get_obs():
