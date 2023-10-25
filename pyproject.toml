@@ -1,0 +1,20 @@
+[project]
+name = "dinkum"
+version = "0.1"
+description = "directed interaction network kit for modeling"
+readme = "README.md"
+requires-python = ">=3.8"
+
+authors = [
+  { name="C. Titus Brown" },
+]
+
+[metadata]
+license = { text = "GNU Affero General Public License v3" }
+
+[tool.pytest.ini_options]
+addopts = "--doctest-glob='doc/*.md'"
+
+testpaths = [
+  "src/tests",
+]
