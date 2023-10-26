@@ -122,6 +122,8 @@ class Timecourse:
             # advance => next state
             this_state = next_state
 
+        yield this_state
+
 
 def run(start, stop):
     # run time course
