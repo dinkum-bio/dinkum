@@ -160,7 +160,7 @@ def test_simple_positive_feedback():
     dinkum.run(1, 5)
 
 
-def test_simple_feed_forward():
+def test_simple_coherent_feed_forward():
     dinkum.reset()
 
     # establish preconditions
