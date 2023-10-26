@@ -71,14 +71,16 @@ class State:
 
 
 class Timecourse:
-    def iterate(self, *, start=None, stop=None):
+    def iterate(self, *, start=None, stop=None, verbose=False):
         assert start is not None
         assert stop is not None
 
         tissues = vfn.get_tissues()
-        print(f"got {len(tissues)} tissues.")
-        for t in tissues:
-            print(f"\ttissue {t.name}")
+        if verbose:
+            print(f"got {len(tissues)} tissues.")
+            for t in tissues:
+                print(f"\ttissue {t.name}")
+            print('')
 
         # initialize state at start for all tissues
         this_state = State(tissues=tissues, time=start)
