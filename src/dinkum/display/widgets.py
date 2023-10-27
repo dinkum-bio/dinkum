@@ -4,8 +4,10 @@ __all__ = ["MultiTissuePanel",
 from ipycanvas import Canvas
 
 class MultiTissuePanel:
-    def __init__(self, *, states=None, tissue_names=None):
+    def __init__(self, *, states=None, tissue_names=None, save_image=None):
         self.panels = [ TissueActivityPanel(states=states, tissue_name=t) for t in tissue_names ]
+
+        self.save_image = save_image
         
     def draw(self, is_active_fn):
         total_width = 0
@@ -17,7 +19,17 @@ class MultiTissuePanel:
             total_width += width
             x_offsets.append(width)
 
-        canvas = Canvas(width=total_width, height=max_height)
+        canvas = Canvas(width=total_width, height=max_height,
+                        sync_image_data=True)
+
+        if self.save_image:
+            # define callback per
+            # https://ipycanvas.readthedocs.io/en/latest/retrieve_images.html
+            def save_to_file(*args, **kwargs):
+                canvas.to_file(self.save_image)
+
+            canvas.observe(save_to_file, "image_data")
+        
         for p, x_offset in zip(self.panels, x_offsets):
             p.draw_tissue(canvas, is_active_fn, x_offset=x_offset)
             
@@ -58,7 +70,8 @@ class TissueActivityPanel:
     def draw(self, is_active):
         "Create canvas & draw single tissue."
         width, height = self.estimate_panel_size()
-        canvas = Canvas(width=width, height=height)
+        canvas = Canvas(width=width, height=height,
+                        sync_image_data=True)
         self.draw_tissue(canvas, is_active)
         
         return canvas
