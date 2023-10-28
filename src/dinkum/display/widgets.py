@@ -1,7 +1,8 @@
 __all__ = ["MultiTissuePanel",
            "TissueActivityPanel" ]
 
-from ipycanvas import Canvas
+#from ipycanvas import Canvas
+from PIL import Image, ImageDraw
 
 class MultiTissuePanel:
     def __init__(self, *, states=None, tissue_names=None, save_image=None):
@@ -19,27 +20,29 @@ class MultiTissuePanel:
             total_width += width
             x_offsets.append(width)
 
-        canvas = Canvas(width=total_width, height=max_height,
-                        sync_image_data=True)
+        im = Image.new('RGB', (total_width, max_height), 'white')
 
-        if self.save_image:
+        #canvas = Canvas(width=total_width, height=max_height,
+        #                sync_image_data=True)
+
+        #if self.save_image:
             # define callback per
             # https://ipycanvas.readthedocs.io/en/latest/retrieve_images.html
-            def save_to_file(*args, **kwargs):
-                canvas.to_file(self.save_image)
+        #    def save_to_file(*args, **kwargs):
+        #        canvas.to_file(self.save_image)
 
-            canvas.observe(save_to_file, "image_data")
+        #    canvas.observe(save_to_file, "image_data")
         
         for p, x_offset in zip(self.panels, x_offsets):
             # draw background
-            d = p.draw_tissue(canvas, x_offset=x_offset)
+            d = p.draw_tissue(im, x_offset=x_offset)
 
             # draw time point/tissue/state
             gene_names = p.gene_names
             times = p.times
-            d.draw(canvas, times, gene_names, is_active_fn)
+            d.draw(im, times, gene_names, is_active_fn)
             
-        return canvas
+        return im
 
 
 class Tissue_TimePointGene_Location:
@@ -48,9 +51,11 @@ class Tissue_TimePointGene_Location:
         self.gene = gene
         self.polygon_coords = polygon_coords
 
-    def draw(self, canvas, color):
-        canvas.fill_style = color
-        canvas.fill_rect(*self.polygon_coords)
+    def draw(self, imdraw, color):
+        x, y, width, height = self.polygon_coords
+        imdraw.rectangle((x, y, x+width, y+height), fill=color)
+        #im.fill_style = color
+        #im.fill_rect(*self.polygon_coords)
 
 
 class TissueActivityPanel:
@@ -100,25 +105,27 @@ class TissueActivityPanel:
                 locations_by_tg[(times[row], gene_names[col])] = loc
 
         self.locations_by_tg = locations_by_tg
-                
-        canvas.font = "18px Arial"
-        canvas.text_baseline = "top"
-        canvas.fill_style = "black"
 
-        # row names / time points
-        canvas.text_align = "right"
-        for row in range(0, len(times)):
-            xpos = self.box_x_start - box_total_size / 2 + x_offset
-            ypos = self.box_y_start + box_total_size*row
-            canvas.fill_text(times[row], xpos, ypos)
+        if 0:
+            canvas.font = "18px Arial"
+            canvas.text_baseline = "top"
+            canvas.fill_style = "black"
 
-        # col names / genes
-        canvas.text_align = "center"
-        for col in range(0, len(gene_names)):
-            ypos = self.box_y_start - box_total_size
-            xpos = self.box_x_start + box_total_size*col + box_total_size / 2 + x_offset
 
-            canvas.fill_text(gene_names[col], xpos, ypos, max_width = box_total_size)
+            # row names / time points
+            canvas.text_align = "right"
+            for row in range(0, len(times)):
+                xpos = self.box_x_start - box_total_size / 2 + x_offset
+                ypos = self.box_y_start + box_total_size*row
+                canvas.fill_text(times[row], xpos, ypos)
+
+            # col names / genes
+            canvas.text_align = "center"
+            for col in range(0, len(gene_names)):
+                ypos = self.box_y_start - box_total_size
+                xpos = self.box_x_start + box_total_size*col + box_total_size / 2 + x_offset
+
+                canvas.fill_text(gene_names[col], xpos, ypos, max_width = box_total_size)
 
         return TissueActivityPanel_Draw(self)
 
@@ -130,7 +137,8 @@ class TissueActivityPanel_Draw:
     def __init__(self, template):
         self.template = template
 
-    def draw(self, canvas, times, gene_names, is_active_fn):
+    def draw(self, im, times, gene_names, is_active_fn):
+        imdraw = ImageDraw.Draw(im)
         locations_by_tg = self.template.locations_by_tg
         tissue_name = self.template.tissue_name
 
@@ -144,4 +152,4 @@ class TissueActivityPanel_Draw:
 
                 loc = locations_by_tg.get((tp, gene))
                 if loc:
-                    loc.draw(canvas, color)
+                    loc.draw(imdraw, color)
