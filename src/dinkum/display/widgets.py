@@ -35,7 +35,17 @@ class MultiTissuePanel:
             
         return canvas
 
-        
+
+class Tissue_TimePointGene_Location:
+    def __init__(self, timepoint, gene, polygon_coords):
+        self.tp = timepoint
+        self.gene = gene
+        self.polygon_coords = polygon_coords
+
+    def draw(self, canvas, color):
+        canvas.fill_style = color
+        canvas.fill_rect(*self.polygon_coords)
+
 class TissueActivityPanel:
     box_size = 25
     box_spacing = 5
@@ -83,16 +93,27 @@ class TissueActivityPanel:
 
         box_total_size = self.box_size + self.box_spacing
 
+        locations_by_tg = {}
+
         for row in range(0, len(times)):
             for col in range(0, len(gene_names)):
-                if is_active_fn(self.tissue_name, times[row], gene_names[col]):
-                    canvas.fill_style = self.active_color
-                else:
-                    canvas.fill_style = self.inactive_color
-
                 xpos = self.box_x_start + box_total_size*col + x_offset
                 ypos = self.box_y_start + box_total_size*row
-                canvas.fill_rect(xpos, ypos, self.box_size, self.box_size)
+                
+                coords = (xpos, ypos, self.box_size, self.box_size)
+                loc = Tissue_TimePointGene_Location(times[row], gene_names[col], coords)
+                locations_by_tg[(times[row], gene_names[col])] = loc
+                
+        for tp in times:
+            for gene in gene_names:
+                color = None
+                if is_active_fn(self.tissue_name, tp, gene):
+                    color = self.active_color
+                else:
+                    color = self.inactive_color
+
+                loc = locations_by_tg[(tp, gene)]
+                loc.draw(canvas, color)
 
         canvas.font = "18px Arial"
         canvas.text_baseline = "top"
