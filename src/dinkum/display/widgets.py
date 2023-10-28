@@ -1,14 +1,16 @@
 __all__ = ["MultiTissuePanel",
            "TissueActivityPanel" ]
 
-#from ipycanvas import Canvas
-from PIL import Image, ImageDraw
+from .draw_ipycanvas import IpycanvasDrawer
+from .draw_pillow import PillowDrawer
 
 class MultiTissuePanel:
-    def __init__(self, *, states=None, tissue_names=None, save_image=None):
+    def __init__(self, *, states=None, tissue_names=None, save_image=None,
+                 canvas_type=None):
         self.panels = [ TissueActivityPanel(states=states, tissue_name=t) for t in tissue_names ]
 
         self.save_image = save_image
+        self.canvas_type = canvas_type
         
     def draw(self, is_active_fn):
         total_width = 0
@@ -20,29 +22,24 @@ class MultiTissuePanel:
             total_width += width
             x_offsets.append(width)
 
-        im = Image.new('RGB', (total_width, max_height), 'white')
+        if self.canvas_type == 'ipycanvas':
+            canvas = IpycanvasDrawer(width=total_width,
+                                     height=max_height,
+                                     save_image=self.save_image)
+        else:
+            canvas = PillowDrawer(width=total_width,
+                                  height=max_height)
 
-        #canvas = Canvas(width=total_width, height=max_height,
-        #                sync_image_data=True)
-
-        #if self.save_image:
-            # define callback per
-            # https://ipycanvas.readthedocs.io/en/latest/retrieve_images.html
-        #    def save_to_file(*args, **kwargs):
-        #        canvas.to_file(self.save_image)
-
-        #    canvas.observe(save_to_file, "image_data")
-        
         for p, x_offset in zip(self.panels, x_offsets):
             # draw background
-            d = p.draw_tissue(im, x_offset=x_offset)
+            d = p.draw_tissue(canvas, x_offset=x_offset)
 
             # draw time point/tissue/state
             gene_names = p.gene_names
             times = p.times
-            d.draw(im, times, gene_names, is_active_fn)
+            d.draw(canvas, times, gene_names, is_active_fn)
             
-        return im
+        return canvas.image()
 
 
 class Tissue_TimePointGene_Location:
@@ -51,11 +48,8 @@ class Tissue_TimePointGene_Location:
         self.gene = gene
         self.polygon_coords = polygon_coords
 
-    def draw(self, imdraw, color):
-        x, y, width, height = self.polygon_coords
-        imdraw.rectangle((x, y, x+width, y+height), fill=color)
-        #im.fill_style = color
-        #im.fill_rect(*self.polygon_coords)
+    def draw(self, canvas, color):
+        canvas.draw_rectangle(self.polygon_coords, color)
 
 
 class TissueActivityPanel:
@@ -137,8 +131,7 @@ class TissueActivityPanel_Draw:
     def __init__(self, template):
         self.template = template
 
-    def draw(self, im, times, gene_names, is_active_fn):
-        imdraw = ImageDraw.Draw(im)
+    def draw(self, canvas, times, gene_names, is_active_fn):
         locations_by_tg = self.template.locations_by_tg
         tissue_name = self.template.tissue_name
 
@@ -152,4 +145,4 @@ class TissueActivityPanel_Draw:
 
                 loc = locations_by_tg.get((tp, gene))
                 if loc:
-                    loc.draw(imdraw, color)
+                    loc.draw(canvas, color)
