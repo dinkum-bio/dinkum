@@ -31,7 +31,13 @@ class MultiTissuePanel:
             canvas.observe(save_to_file, "image_data")
         
         for p, x_offset in zip(self.panels, x_offsets):
-            p.draw_tissue(canvas, is_active_fn, x_offset=x_offset)
+            # draw background
+            d = p.draw_tissue(canvas, x_offset=x_offset)
+
+            # draw time point/tissue/state
+            gene_names = p.gene_names
+            times = p.times
+            d.draw(canvas, times, gene_names, is_active_fn)
             
         return canvas
 
@@ -45,6 +51,7 @@ class Tissue_TimePointGene_Location:
     def draw(self, canvas, color):
         canvas.fill_style = color
         canvas.fill_rect(*self.polygon_coords)
+
 
 class TissueActivityPanel:
     box_size = 25
@@ -74,16 +81,7 @@ class TissueActivityPanel:
         width = len(self.gene_names) * (self.box_size + self.box_spacing) + self.box_x_start
         return width, height
     
-    def draw(self, is_active):
-        "Create canvas & draw single tissue."
-        width, height = self.estimate_panel_size()
-        canvas = Canvas(width=width, height=height,
-                        sync_image_data=True)
-        self.draw_tissue(canvas, is_active)
-        
-        return canvas
-
-    def draw_tissue(self, canvas, is_active_fn, *, x_offset=0):
+    def draw_tissue(self, canvas, *, x_offset=0):
         "Draw this tissue on existing canvas."
         gene_names = self.gene_names
         times = self.times
@@ -122,10 +120,7 @@ class TissueActivityPanel:
 
             canvas.fill_text(gene_names[col], xpos, ypos, max_width = box_total_size)
 
-        d = TissueActivityPanel_Draw(self)
-        gene_names = self.gene_names
-        times = self.times
-        d.draw(canvas, times, gene_names, is_active_fn)
+        return TissueActivityPanel_Draw(self)
 
 
 class TissueActivityPanel_Draw:
