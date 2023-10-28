@@ -53,9 +53,6 @@ class TissueActivityPanel:
     box_x_start = 100
     box_y_start = 50
     
-    active_color = "DeepSkyBlue"
-    inactive_color = "DarkGrey"
-    
     def __init__(self, *, states=None, tissue_name=None):
         assert tissue_name is not None
         self.tissue_name = tissue_name
@@ -103,18 +100,9 @@ class TissueActivityPanel:
                 coords = (xpos, ypos, self.box_size, self.box_size)
                 loc = Tissue_TimePointGene_Location(times[row], gene_names[col], coords)
                 locations_by_tg[(times[row], gene_names[col])] = loc
+
+        self.locations_by_tg = locations_by_tg
                 
-        for tp in times:
-            for gene in gene_names:
-                color = None
-                if is_active_fn(self.tissue_name, tp, gene):
-                    color = self.active_color
-                else:
-                    color = self.inactive_color
-
-                loc = locations_by_tg[(tp, gene)]
-                loc.draw(canvas, color)
-
         canvas.font = "18px Arial"
         canvas.text_baseline = "top"
         canvas.fill_style = "black"
@@ -133,3 +121,32 @@ class TissueActivityPanel:
             xpos = self.box_x_start + box_total_size*col + box_total_size / 2 + x_offset
 
             canvas.fill_text(gene_names[col], xpos, ypos, max_width = box_total_size)
+
+        d = TissueActivityPanel_Draw(self)
+        gene_names = self.gene_names
+        times = self.times
+        d.draw(canvas, times, gene_names, is_active_fn)
+
+
+class TissueActivityPanel_Draw:
+    active_color = "DeepSkyBlue"
+    inactive_color = "DarkGrey"
+    
+    def __init__(self, template):
+        self.template = template
+
+    def draw(self, canvas, times, gene_names, is_active_fn):
+        locations_by_tg = self.template.locations_by_tg
+        tissue_name = self.template.tissue_name
+
+        for tp in times:
+            for gene in gene_names:
+                color = None
+                if is_active_fn(tissue_name, tp, gene):
+                    color = self.active_color
+                else:
+                    color = self.inactive_color
+
+                loc = locations_by_tg.get((tp, gene))
+                if loc:
+                    loc.draw(canvas, color)
