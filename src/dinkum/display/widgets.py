@@ -100,26 +100,22 @@ class TissueActivityPanel:
 
         self.locations_by_tg = locations_by_tg
 
-        if 0:
-            canvas.font = "18px Arial"
-            canvas.text_baseline = "top"
-            canvas.fill_style = "black"
+        # row names / time points
+        for row in range(0, len(times)):
+            xpos = self.box_x_start - box_total_size / 2 + x_offset
+            ypos = self.box_y_start + box_total_size*row
+            canvas.draw_text(times[row], xpos, ypos, align="right")
 
+        # col names / genes
+        for col in range(0, len(gene_names)):
+            ypos = self.box_y_start - box_total_size
 
-            # row names / time points
-            canvas.text_align = "right"
-            for row in range(0, len(times)):
-                xpos = self.box_x_start - box_total_size / 2 + x_offset
-                ypos = self.box_y_start + box_total_size*row
-                canvas.fill_text(times[row], xpos, ypos)
+            xpos = self.box_x_start + box_total_size*col
+            xpos += x_offset
 
-            # col names / genes
-            canvas.text_align = "center"
-            for col in range(0, len(gene_names)):
-                ypos = self.box_y_start - box_total_size
-                xpos = self.box_x_start + box_total_size*col + box_total_size / 2 + x_offset
-
-                canvas.fill_text(gene_names[col], xpos, ypos, max_width = box_total_size)
+            canvas.draw_text(gene_names[col], xpos, ypos,
+                             align="center")
+                             #max_width = box_total_size)
 
         return TissueActivityPanel_Draw(self)
 

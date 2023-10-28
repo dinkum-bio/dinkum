@@ -10,5 +10,15 @@ class PillowDrawer:
         x, y, width, height = coords
         self.imdraw.rectangle((x, y, x + width, y + height), fill=color)
 
+    def draw_text(self, text, xpos, ypos, color="black", align="center"):
+        if align == "center":
+            anchor = "mm"
+        elif align == "right":
+            anchor = "rm"
+        else:
+            raise Exception(f"unknown align string: '{align}'")
+            
+        self.imdraw.text((xpos, ypos), text, fill=color, anchor=anchor)
+        
     def image(self):
         return self.im
