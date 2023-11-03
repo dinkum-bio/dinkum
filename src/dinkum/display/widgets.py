@@ -112,7 +112,7 @@ class TissueActivityPanel:
         return width, height
     
     def draw_tissue(self, canvas, *, x_offset=0):
-        """Draw this tissu on existing canvas.
+        """Draw this tissue on existing canvas.
 
         Returns a TissueActivityPanel_Draw that can be used to fill in the
         actual gene/time point/tissue activity.
@@ -165,7 +165,7 @@ class TissueActivityPanel:
 
 
 class TissueActivityPanel_Draw:
-    "Use the timep/gene location to darw gene activity."
+    "Use the timep/gene location to draw gene activity."
     active_color = "DeepSkyBlue"
     inactive_color = "DarkGrey"
     
@@ -187,3 +187,14 @@ class TissueActivityPanel_Draw:
                 loc = locations_by_tg.get((tp, gene))
                 if loc:
                     loc.draw(canvas, color)
+
+
+###
+
+class SeaUrchin_Blastula_ActivityPanel:
+    def __init__(self, *, states=None, tissue_name=None):
+        self.tissue_name = name
+        self.states = states
+
+    def draw_tissue(self, canvas, *, x_offset=0):
+        pass
