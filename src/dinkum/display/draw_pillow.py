@@ -6,9 +6,8 @@ class PillowDrawer:
         self.im = Image.new('RGB', (width, height), 'white')
         self.imdraw = ImageDraw.Draw(self.im)
 
-    def draw_rectangle(self, coords, color):
-        x, y, width, height = coords
-        self.imdraw.rectangle((x, y, x + width, y + height), fill=color)
+    def polygon(self, coords, fill):
+        self.imdraw.polygon(coords, fill=fill)
 
     def draw_text(self, text, xpos, ypos, color="black", align="center"):
         if align == "center":

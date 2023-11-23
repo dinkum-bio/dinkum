@@ -5,23 +5,37 @@ from .draw_ipycanvas import IpycanvasDrawer
 from .draw_pillow import PillowDrawer
 
 class MultiTissuePanel:
+    """
+    Draw multiple panels, representing multiple tissues & gene expression
+    in each one.
+    """
     def __init__(self, *, states=None, tissue_names=None, save_image=None,
                  canvas_type=None):
-        self.panels = [ TissueActivityPanel(states=states, tissue_name=t) for t in tissue_names ]
+        # create individual panels for each tissue
+        self.panels = [ TissueActivityPanel(states=states, tissue_name=t)
+                        for t in tissue_names ]
 
         self.save_image = save_image
         self.canvas_type = canvas_type
-        
+
     def draw(self, is_active_fn):
+        """
+        Draw the basic background canvas, upon which gene activation info
+        will be displayed.
+        """
+
+        # determine overall panel size
         total_width = 0
         x_offsets = [0]
         max_height = 0
+
         for p in self.panels:
             width, height = p.estimate_panel_size()
             max_height = max(height, max_height)
             total_width += width
             x_offsets.append(width)
 
+        # build the appropriate canvas type
         if self.canvas_type == 'ipycanvas':
             canvas = IpycanvasDrawer(width=total_width,
                                      height=max_height,
@@ -30,6 +44,8 @@ class MultiTissuePanel:
             canvas = PillowDrawer(width=total_width,
                                   height=max_height)
 
+        # draw each tissue, with each collection of genes,
+        # spread out horizontally
         for p, x_offset in zip(self.panels, x_offsets):
             # draw background
             d = p.draw_tissue(canvas, x_offset=x_offset)
@@ -43,16 +59,25 @@ class MultiTissuePanel:
 
 
 class Tissue_TimePointGene_Location:
+    """
+    A class to track each time point & gene location within a particular
+    tissue.
+    """
     def __init__(self, timepoint, gene, polygon_coords):
         self.tp = timepoint
         self.gene = gene
         self.polygon_coords = polygon_coords
 
     def draw(self, canvas, color):
-        canvas.draw_rectangle(self.polygon_coords, color)
+        canvas.polygon(self.polygon_coords, fill=color)
 
 
 class TissueActivityPanel:
+    """
+    A class to draw and display gene activity in a single tissue.
+
+    Constructed to be used within a MultiTissuePanel, among other things.
+    """
     box_size = 25
     box_spacing = 5
     
@@ -62,7 +87,10 @@ class TissueActivityPanel:
     def __init__(self, *, states=None, tissue_name=None):
         assert tissue_name is not None
         self.tissue_name = tissue_name
-    
+
+        assert states is not None
+
+        # determine all genes releavnt to this tissue, + times, from 'states'.
         times = []
         all_gene_names = set()
         for (tp, state) in states:
@@ -76,12 +104,19 @@ class TissueActivityPanel:
         self.states = states
 
     def estimate_panel_size(self):
-        height = len(self.times) * (self.box_size + self.box_spacing) + self.box_y_start
-        width = len(self.gene_names) * (self.box_size + self.box_spacing) + self.box_x_start
+        "Estimate the size of this panel, based on # times / # genes"
+        height = len(self.times) * (self.box_size + self.box_spacing) + \
+            self.box_y_start
+        width = len(self.gene_names) * (self.box_size + self.box_spacing) + \
+            self.box_x_start
         return width, height
     
     def draw_tissue(self, canvas, *, x_offset=0):
-        "Draw this tissue on existing canvas."
+        """Draw this tissue on existing canvas.
+
+        Returns a TissueActivityPanel_Draw that can be used to fill in the
+        actual gene/time point/tissue activity.
+        """
         gene_names = self.gene_names
         times = self.times
 
@@ -89,24 +124,33 @@ class TissueActivityPanel:
 
         locations_by_tg = {}
 
+        # determine the locations of the time points / genes.
         for row in range(0, len(times)):
             for col in range(0, len(gene_names)):
                 xpos = self.box_x_start + box_total_size*col + x_offset
                 ypos = self.box_y_start + box_total_size*row
                 
-                coords = (xpos, ypos, self.box_size, self.box_size)
-                loc = Tissue_TimePointGene_Location(times[row], gene_names[col], coords)
-                locations_by_tg[(times[row], gene_names[col])] = loc
+                coords = [(xpos, ypos),
+                          (xpos + self.box_size, ypos),
+                          (xpos + self.box_size, ypos + self.box_size),
+                          (xpos, ypos + self.box_size)]
+
+                timep = times[row]
+                gene_name = gene_names[col]
+                loc = Tissue_TimePointGene_Location(timep, gene_name, coords)
+
+                # save!
+                locations_by_tg[(timep, gene_name)] = loc
 
         self.locations_by_tg = locations_by_tg
 
-        # row names / time points
+        # draw row names / time points
         for row in range(0, len(times)):
             xpos = self.box_x_start - box_total_size / 2 + x_offset
             ypos = self.box_y_start + box_total_size*row
             canvas.draw_text(times[row], xpos, ypos, align="right")
 
-        # col names / genes
+        # draw col names / genes
         for col in range(0, len(gene_names)):
             ypos = self.box_y_start - box_total_size
 
@@ -121,6 +165,7 @@ class TissueActivityPanel:
 
 
 class TissueActivityPanel_Draw:
+    "Use the timep/gene location to draw gene activity."
     active_color = "DeepSkyBlue"
     inactive_color = "DarkGrey"
     
@@ -142,3 +187,14 @@ class TissueActivityPanel_Draw:
                 loc = locations_by_tg.get((tp, gene))
                 if loc:
                     loc.draw(canvas, color)
+
+
+###
+
+class SeaUrchin_Blastula_ActivityPanel:
+    def __init__(self, *, states=None, tissue_name=None):
+        self.tissue_name = name
+        self.states = states
+
+    def draw_tissue(self, canvas, *, x_offset=0):
+        pass
