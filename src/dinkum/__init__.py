@@ -146,6 +146,12 @@ class Timecourse:
             self.states_d[tp] = next_state
             this_state = next_state
 
+    def check(self):
+        "Test all of the observations for all of the states."
+        for state in iter(self):
+            if not observations.test_observations(state):
+                raise DinkumObservationFailed(state.time)
+
 
 def run(start, stop, *, verbose=False):
     # run time course
