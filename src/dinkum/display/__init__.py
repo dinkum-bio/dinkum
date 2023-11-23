@@ -3,14 +3,16 @@ from .widgets import *
 from .. import Timecourse
 
 def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False):
-    tc = Timecourse()
+    tc = Timecourse(start=start, stop=stop)
 
     state_record = []     # (tp_name, state)
 
     time_points = {}      # time_point_name => index
     all_tissues = set()   # all tissues across all time points
 
-    for n, state in enumerate(tc.iterate(start=start, stop=stop)):
+    tc.run()
+
+    for n, state in enumerate(iter(tc)):
         tp = f"t={state.time}"
         if verbose:
             print(tp)

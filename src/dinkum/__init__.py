@@ -46,6 +46,9 @@ class GeneActivity:
 
 
 class State:
+    """
+    Hold the gene activity state for multiple tissues.
+    """
     def __init__(self, *, tissues=None, time=None):
         assert tissues is not None
         assert time is not None
@@ -71,9 +74,28 @@ class State:
 
 
 class Timecourse:
-    def iterate(self, *, start=None, stop=None, verbose=False):
+    """
+    Run a time course for a system b/t two time points, start and stop.
+    """
+    def __init__(self, *, start=None, stop=None):
         assert start is not None
         assert stop is not None
+
+        print(f'start={start} stop={stop}')
+
+        self.start = start
+        self.stop = stop
+        self.states_d = {}
+
+    def __iter__(self):
+        return iter(self.states_d.values())
+
+    def __len__(self):
+        return len(self.states_d)
+
+    def run(self, *, verbose=False):
+        start = self.start
+        stop = self.stop
 
         tissues = vfn.get_tissues()
         if verbose:
@@ -91,10 +113,11 @@ class Timecourse:
 
             this_state[t] = this_active
 
+        self.states_d[start] = this_state
+
         # advance one tick at a time
-        for i in range(start + 1, stop + 1):
-            yield this_state
-            next_state = State(tissues=tissues, time=i)
+        for tp in range(start + 1, stop + 1):
+            next_state = State(tissues=tissues, time=tp)
 
             for t in tissues:
                 this_active = this_state[t]
@@ -103,7 +126,7 @@ class Timecourse:
 
                 # bring in maternal/always active
                 seen = set()
-                for g in t.all_active(at=i):
+                for g in t.all_active(at=tp):
                     next_active.set_activity(gene=g, active=1)
                     seen.add(g.name)
 
@@ -120,18 +143,21 @@ class Timecourse:
                 next_state[t] = next_active
 
             # advance => next state
+            self.states_d[tp] = next_state
             this_state = next_state
 
-        yield this_state
 
-
-def run(start, stop):
+def run(start, stop, *, verbose=False):
     # run time course
-    tc = Timecourse()
-    for state in tc.iterate(start=start, stop=stop):
+    tc = Timecourse(start=start, stop=stop)
+    tc.run(verbose=verbose)
+
+    for state in tc:
         print(f"time={state.time}")
         for ti in state.tissues:
             present = state[ti]
             print(f"\ttissue={ti.name}, {present.report_activity()}")
         if not observations.test_observations(state):
             raise DinkumObservationFailed(state.time)
+
+    return tc

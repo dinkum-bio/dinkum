@@ -19,7 +19,8 @@ def test_maternal():
     observations.check_is_not_present(gene='X', time=2, tissue='M')
 
     # run time course
-    dinkum.run(1, 5)
+    tc = dinkum.run(1, 5)
+    assert len(tc) == 5
 
 
 def test_maternal_fail():
@@ -34,7 +35,7 @@ def test_maternal_fail():
     observations.check_is_present(gene='X', time=2, tissue='M')
 
     with pytest.raises(dinkum.DinkumObservationFailed):
-        dinkum.run(1, 5)
+        dinkum.run(1, 5, verbose=True)
 
 
 def test_activation():
