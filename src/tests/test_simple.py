@@ -19,7 +19,8 @@ def test_maternal():
     observations.check_is_not_present(gene='X', time=2, tissue='M')
 
     # run time course
-    dinkum.run(1, 5)
+    tc = dinkum.run(1, 5)
+    assert len(tc) == 5
 
 
 def test_maternal_fail():
@@ -34,7 +35,7 @@ def test_maternal_fail():
     observations.check_is_present(gene='X', time=2, tissue='M')
 
     with pytest.raises(dinkum.DinkumObservationFailed):
-        dinkum.run(1, 5)
+        dinkum.run(1, 5, verbose=True)
 
 
 def test_activation():
@@ -57,6 +58,43 @@ def test_activation():
 
     # run!
     dinkum.run(start=1, stop=5)
+
+
+def test_activation_fail():
+    dinkum.reset()
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    y.activated_by(source=x)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1)
+
+    # run!
+    tc = dinkum.run(start=1, stop=5)
+
+    # set observations
+    observations.check_is_not_present(gene='X', time=1, tissue='M')
+    with pytest.raises(dinkum.DinkumObservationFailed):
+        tc.check()
+    observations.reset()
+
+    observations.check_is_present(gene='Y', time=1, tissue='M')
+    with pytest.raises(dinkum.DinkumObservationFailed):
+        tc.check()
+    observations.reset()
+
+    observations.check_is_not_present(gene='X', time=2, tissue='M')
+    with pytest.raises(dinkum.DinkumObservationFailed):
+        tc.check()
+    observations.reset()
+
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
+    with pytest.raises(dinkum.DinkumObservationFailed):
+        tc.check()
+    observations.reset()
 
 
 def test_simple_repression():
