@@ -4,6 +4,7 @@ from . import vfn
 from . import observations
 
 import itertools
+import collections
 
 class DinkumException(Exception):
     pass
@@ -73,6 +74,15 @@ class State:
         return self._tissues
 
 
+class States(collections.UserDict):
+    """
+    Contains (potentially incomplete) set of tissue/gene states for many
+    timepoints.
+    """
+    def __init__(self):
+        self.data = {}
+
+
 class Timecourse:
     """
     Run a time course for a system b/t two time points, start and stop.
@@ -85,7 +95,7 @@ class Timecourse:
 
         self.start = start
         self.stop = stop
-        self.states_d = {}
+        self.states_d = States()
 
     def __iter__(self):
         return iter(self.states_d.values())
