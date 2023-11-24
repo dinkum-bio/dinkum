@@ -21,15 +21,7 @@ def reset():
 
 
 def check_is_active(states, current_tp, delay, gene, tissue):
-    assert int(current_tp)
-    assert int(delay)
-    assert isinstance(gene, Gene)
-
-    check_tp = current_tp - delay
-    state = states.get(check_tp)
-    if state and state[tissue] and gene in state[tissue]:
-        return True
-    return False
+    return states.is_active(current_tp, delay, gene, tissue)
     
 
 class Interactions:

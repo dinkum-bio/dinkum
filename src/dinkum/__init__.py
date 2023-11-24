@@ -73,6 +73,12 @@ class State:
     def tissues(self):
         return self._tissues
 
+    def is_active(self, gene, tissue):
+        ts = self[tissue]
+        if ts and gene in ts:
+            return True
+        return False
+
 
 class States(collections.UserDict):
     """
@@ -81,6 +87,19 @@ class States(collections.UserDict):
     """
     def __init__(self):
         self.data = {}
+
+    def is_active(self, current_tp, delay, gene, tissue):
+        from .vfg import Gene
+
+        assert int(current_tp)
+        assert int(delay)
+        assert isinstance(gene, Gene)
+
+        check_tp = current_tp - delay
+        state = self.get(check_tp)
+        if state and state.is_active(gene, tissue):
+            return True
+        return False
 
 
 class Timecourse:
