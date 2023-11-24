@@ -20,10 +20,6 @@ def reset():
     _rules = []
 
 
-def check_is_active(states, current_tp, delay, gene, tissue):
-    return states.is_active(current_tp, delay, gene, tissue)
-    
-
 class Interactions:
     pass
 
@@ -41,7 +37,7 @@ class Interaction_Activates(Interactions):
         assert tissue
         assert timepoint is not None
 
-        if check_is_active(states, timepoint, self.delay, self.src, tissue):
+        if states.is_active(timepoint, self.delay, self.src, tissue):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -60,9 +56,8 @@ class Interaction_Or(Interactions):
         assert states
         assert tissue
 
-        source_active = [ check_is_active(states, timepoint,
-                                          self.delay, g, tissue) for g
-                                          in self.sources ]
+        source_active = [ states.is_active(timepoint, self.delay, g, tissue)
+                          for g in self.sources ]
 
         if any(source_active):
             yield self.dest, 1
@@ -81,9 +76,9 @@ class Interaction_AndNot(Interactions):
         assert states
         assert tissue
 
-        src_is_active = check_is_active(states, timepoint, self.delay,
-                                        self.src, tissue)
-        repressor_is_active = check_is_active(states, timepoint, self.delay,
+        src_is_active = states.is_active(timepoint, self.delay,
+                                         self.src, tissue)
+        repressor_is_active = states.is_active(timepoint, self.delay,
                                               self.repressor, tissue)
 
         if src_is_active and not repressor_is_active:
@@ -102,9 +97,8 @@ class Interaction_And(Interactions):
         assert states
         assert tissue
 
-        source_active = [ check_is_active(states, timepoint,
-                                          self.delay, g, tissue) for g
-                                          in self.sources ]
+        source_active = [ states.is_active(timepoint, self.delay, g, tissue)
+                          for g in self.sources ]
 
         if all(source_active):
             yield self.dest, 1
@@ -123,10 +117,10 @@ class Interaction_ToggleRepressed(Interactions):
         assert states
         assert tissue
 
-        tf_active = check_is_active(states, timepoint, self.delay,
-                                    self.tf, tissue)
-        cofactor_active = check_is_active(states, timepoint, self.delay,
-                                          self.cofactor, tissue)
+        tf_active = states.is_active(timepoint, self.delay,
+                                     self.tf, tissue)
+        cofactor_active = states.is_active(timepoint, self.delay,
+                                           self.cofactor, tissue)
 
 
         if tf_active and not cofactor_active:
@@ -146,12 +140,12 @@ class Interaction_Ligand(Interactions):
         assert states
         assert tissue
 
-        activator_is_active = check_is_active(states, timepoint, self.delay,
-                                              self.activator, tissue)
+        activator_is_active = states.is_active(timepoint, self.delay,
+                                               self.activator, tissue)
         ligand_in_neighbors = []
         for neighbor in tissue.neighbors:
-            neighbor_active = check_is_active(states, timepoint, self.delay,
-                                              self.ligand, neighbor)
+            neighbor_active = states.is_active(timepoint, self.delay,
+                                               self.ligand, neighbor)
             ligand_in_neighbors.append(neighbor_active)
 
         activity = 0
