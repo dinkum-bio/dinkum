@@ -167,22 +167,22 @@ class Gene:
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_or(self, *, sources=None):
-        ix = Interaction_Or(sources=sources, dest=self)
+    def activated_or(self, *, sources=None, delay=1):
+        ix = Interaction_Or(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
 
-    def and_not(self, *, activator=None, repressor=None):
+    def and_not(self, *, activator=None, repressor=None, delay=1):
         ix = Interaction_AndNot(source=activator, repressor=repressor,
-                                dest=self)
+                                dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_by_and(self, *, sources):
-        ix = Interaction_And(sources=sources, dest=self)
+    def activated_by_and(self, *, sources, delay=1):
+        ix = Interaction_And(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
 
-    def toggle_repressed(self, *, tf=None, cofactor=None):
+    def toggle_repressed(self, *, tf=None, cofactor=None, delay=1):
         ix = Interaction_ToggleRepressed(tf=tf, cofactor=cofactor,
-                                         dest=self)
+                                         dest=self, delay=delay)
         _add_rule(ix)
 
     def is_present(self, *, where=None, start=None, duration=None):
