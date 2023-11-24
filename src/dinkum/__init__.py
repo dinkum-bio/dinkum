@@ -132,7 +132,8 @@ class Timecourse:
 
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, activity in r.advance(state=this_state,
+                    for g, activity in r.advance(timepoint=tp,
+                                                 states=self.states_d,
                                                  tissue=t):
                         if g.name in seen:
                             raise DinkumException(f"multiple rules containing {g.name}")

@@ -25,18 +25,21 @@ class Interactions:
 
 
 class Interaction_Activates(Interactions):
-    def __init__(self, *, source=None, dest=None):
+    def __init__(self, *, source=None, dest=None, delay=1):
         assert isinstance(source, Gene)
         assert isinstance(dest, Gene)
         self.src = source
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
+        assert timepoint is not None
 
-        this_active = state[tissue]
-        if self.src in this_active:
+        check_tp = timepoint - self.delay
+        state = states.get(check_tp)
+        if state and state[tissue] and self.src in state[tissue]:
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -147,8 +150,8 @@ class Gene:
     def active(self):           # present = active
         return 1
 
-    def activated_by(self, *, source=None):
-        ix = Interaction_Activates(source=source, dest=self)
+    def activated_by(self, *, source=None, delay=1):
+        ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
     def activated_or(self, *, sources=None):
