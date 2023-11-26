@@ -3,7 +3,7 @@ name = "dinkum"
 version = "0.1"
 description = "directed interaction network kit for modeling"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     ]
