@@ -4,6 +4,7 @@ from . import vfn
 from . import observations
 
 import itertools
+import collections
 
 class DinkumException(Exception):
     pass
@@ -72,6 +73,34 @@ class State:
     def tissues(self):
         return self._tissues
 
+    def is_active(self, gene, tissue):
+        ts = self[tissue]
+        if ts and gene in ts:
+            return True
+        return False
+
+
+class States(collections.UserDict):
+    """
+    Contains (potentially incomplete) set of tissue/gene states for many
+    timepoints.
+    """
+    def __init__(self):
+        self.data = {}
+
+    def is_active(self, current_tp, delay, gene, tissue):
+        from .vfg import Gene
+
+        assert int(current_tp)
+        assert int(delay)
+        assert isinstance(gene, Gene)
+
+        check_tp = current_tp - delay
+        state = self.get(check_tp)
+        if state and state.is_active(gene, tissue):
+            return True
+        return False
+
 
 class Timecourse:
     """
@@ -85,7 +114,7 @@ class Timecourse:
 
         self.start = start
         self.stop = stop
-        self.states_d = {}
+        self.states_d = States()
 
     def __iter__(self):
         return iter(self.states_d.values())
@@ -132,7 +161,8 @@ class Timecourse:
 
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, activity in r.advance(state=this_state,
+                    for g, activity in r.advance(timepoint=tp,
+                                                 states=self.states_d,
                                                  tissue=t):
                         if g.name in seen:
                             raise DinkumException(f"multiple rules containing {g.name}")

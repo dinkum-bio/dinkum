@@ -10,9 +10,10 @@ class MultiTissuePanel:
     in each one.
     """
     def __init__(self, *, states=None, tissue_names=None, save_image=None,
-                 canvas_type=None):
+                 canvas_type=None, genes_by_name=None):
         # create individual panels for each tissue
-        self.panels = [ TissueActivityPanel(states=states, tissue_name=t)
+        self.panels = [ TissueActivityPanel(states=states, tissue_name=t,
+                                            genes_by_name=genes_by_name)
                         for t in tissue_names ]
 
         self.save_image = save_image
@@ -84,13 +85,13 @@ class TissueActivityPanel:
     box_x_start = 100
     box_y_start = 50
     
-    def __init__(self, *, states=None, tissue_name=None):
+    def __init__(self, *, states=None, tissue_name=None, genes_by_name=None):
         assert tissue_name is not None
         self.tissue_name = tissue_name
 
         assert states is not None
 
-        # determine all genes releavnt to this tissue, + times, from 'states'.
+        # determine all genes relevant to this tissue, + times, from 'states'.
         times = []
         all_gene_names = set()
         for (tp, state) in states:
@@ -98,14 +99,25 @@ class TissueActivityPanel:
             
             activity = state.get_by_tissue_name(tissue_name)
             all_gene_names.update(activity.genes_by_name)
-        self.gene_names = list(sorted(all_gene_names))
+
+        ordered_names = []
+        if not genes_by_name:
+            ordered_names = list(all_gene_names)
+        else:
+            # prioritize genes_by_name; do remainder alphabetically
+            for k in genes_by_name:
+                ordered_names.append(k)
+            for k in sorted(all_gene_names):
+                if k not in genes_by_name:
+                    ordered_names.append(k)
+        self.gene_names = ordered_names
 
         self.times = times
         self.states = states
 
     def estimate_panel_size(self):
         "Estimate the size of this panel, based on # times / # genes"
-        height = len(self.times) * (self.box_size + self.box_spacing) + \
+        height = (len(self.times) + 1) * (self.box_size + self.box_spacing) + \
             self.box_y_start
         width = len(self.gene_names) * (self.box_size + self.box_spacing) + \
             self.box_x_start
@@ -142,6 +154,13 @@ class TissueActivityPanel:
                 # save!
                 locations_by_tg[(timep, gene_name)] = loc
 
+        tissue_label_ypos = len(gene_names) * box_total_size + \
+            self.box_y_start
+        tissue_label_xpos = self.box_x_start + x_offset + 
+            round((box_total_size * len(gene_names)) / 2.0)
+
+        canvas.draw_text(self.tissue_name, tissue_label_xpos,
+                         tissue_label_ypos, align="center")
         self.locations_by_tg = locations_by_tg
 
         # draw row names / time points

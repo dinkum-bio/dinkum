@@ -11,7 +11,7 @@ class PillowDrawer:
 
     def draw_text(self, text, xpos, ypos, color="black", align="center"):
         if align == "center":
-            anchor = "mm"
+            anchor = "lm"
         elif align == "right":
             anchor = "rm"
         else:

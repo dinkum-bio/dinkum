@@ -25,116 +25,132 @@ class Interactions:
 
 
 class Interaction_Activates(Interactions):
-    def __init__(self, *, source=None, dest=None):
+    def __init__(self, *, source=None, dest=None, delay=1):
         assert isinstance(source, Gene)
         assert isinstance(dest, Gene)
         self.src = source
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
+        assert timepoint is not None
 
-        this_active = state[tissue]
-        if self.src in this_active:
+        if states.is_active(timepoint, self.delay, self.src, tissue):
             yield self.dest, 1
         else:
             yield self.dest, 0
 
 
 class Interaction_Or(Interactions):
-    def __init__(self, *, sources=None, dest=None):
+    def __init__(self, *, sources=None, dest=None, delay=1):
         for g in sources:
             assert isinstance(g, Gene)
         assert isinstance(dest, Gene)
         self.sources = sources
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
 
-        this_active = state[tissue]
-        is_active = 0
-        for g in self.sources:
-            if g in this_active:
-                is_active = 1
+        source_active = [ states.is_active(timepoint, self.delay, g, tissue)
+                          for g in self.sources ]
 
-        yield self.dest, is_active
+        if any(source_active):
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_AndNot(Interactions):
-    def __init__(self, *, source=None, repressor=None, dest=None):
+    def __init__(self, *, source=None, repressor=None, dest=None, delay=1):
         self.src = source
         self.repressor = repressor
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
 
-        this_active = state[tissue]
-        if self.src in this_active and not self.repressor in this_active:
+        src_is_active = states.is_active(timepoint, self.delay,
+                                         self.src, tissue)
+        repressor_is_active = states.is_active(timepoint, self.delay,
+                                              self.repressor, tissue)
+
+        if src_is_active and not repressor_is_active:
             yield self.dest, 1
         else:
             yield self.dest, 0
 
 
 class Interaction_And(Interactions):
-    def __init__(self, *, sources=None, dest=None):
+    def __init__(self, *, sources=None, dest=None, delay=1):
         self.sources = sources
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
 
-        this_active = state[tissue]
-        if all([ g in this_active for g in self.sources ]):
+        source_active = [ states.is_active(timepoint, self.delay, g, tissue)
+                          for g in self.sources ]
+
+        if all(source_active):
             yield self.dest, 1
         else:
             yield self.dest, 0
 
 
 class Interaction_ToggleRepressed(Interactions):
-    def __init__(self, *, tf=None, cofactor=None, dest=None):
+    def __init__(self, *, tf=None, cofactor=None, dest=None, delay=1):
         self.tf = tf
         self.cofactor = cofactor
         self.dest = dest
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
 
-        this_active = state[tissue]
-        activity = 0
-        # tf has to be present...
-        if self.tf in this_active:
-            # if cofactor is present, repress.
-            if self.cofactor not in this_active:
-                activity = 1
+        tf_active = states.is_active(timepoint, self.delay,
+                                     self.tf, tissue)
+        cofactor_active = states.is_active(timepoint, self.delay,
+                                           self.cofactor, tissue)
 
-        yield self.dest, activity
+
+        if tf_active and not cofactor_active:
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_Ligand(Interactions):
-    def __init__(self, *, activator=None, ligand=None, receptor=None):
+    def __init__(self, *, activator=None, ligand=None, receptor=None, delay=1):
         self.activator = activator
         self.ligand = ligand
         self.receptor = receptor
+        self.delay = delay
 
-    def advance(self, *, state=None, tissue=None):
-        assert state
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
         assert tissue
 
+        activator_is_active = states.is_active(timepoint, self.delay,
+                                               self.activator, tissue)
+        ligand_in_neighbors = []
+        for neighbor in tissue.neighbors:
+            neighbor_active = states.is_active(timepoint, self.delay,
+                                               self.ligand, neighbor)
+            ligand_in_neighbors.append(neighbor_active)
+
         activity = 0
-        if self.activator in state[tissue]:
-            #print(f'XXX {self.receptor.name} is present in {tissue.name} b/c {self.activator.name} is active')
-            for neighbor in tissue.neighbors:
-                neighbor_active = state[neighbor]
-                if self.ligand in neighbor_active:
-                    #print(f'XXX {self.receptor.name} is ACTIVE in {tissue.name} b/c {self.ligand.name} is in {neighbor.name}')
-                    activity = 1
+        if activator_is_active and any(ligand_in_neighbors):
+            activity = 1
 
         yield self.receptor, activity
 
@@ -147,26 +163,26 @@ class Gene:
     def active(self):           # present = active
         return 1
 
-    def activated_by(self, *, source=None):
-        ix = Interaction_Activates(source=source, dest=self)
+    def activated_by(self, *, source=None, delay=1):
+        ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_or(self, *, sources=None):
-        ix = Interaction_Or(sources=sources, dest=self)
+    def activated_or(self, *, sources=None, delay=1):
+        ix = Interaction_Or(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
 
-    def and_not(self, *, activator=None, repressor=None):
+    def and_not(self, *, activator=None, repressor=None, delay=1):
         ix = Interaction_AndNot(source=activator, repressor=repressor,
-                                dest=self)
+                                dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_by_and(self, *, sources):
-        ix = Interaction_And(sources=sources, dest=self)
+    def activated_by_and(self, *, sources, delay=1):
+        ix = Interaction_And(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
 
-    def toggle_repressed(self, *, tf=None, cofactor=None):
+    def toggle_repressed(self, *, tf=None, cofactor=None, delay=1):
         ix = Interaction_ToggleRepressed(tf=tf, cofactor=cofactor,
-                                         dest=self)
+                                         dest=self, delay=delay)
         _add_rule(ix)
 
     def is_present(self, *, where=None, start=None, duration=None):

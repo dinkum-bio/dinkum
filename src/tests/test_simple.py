@@ -353,3 +353,27 @@ def test_simple_toggle_switch():
 
     # run!
     dinkum.run(1, 5)
+
+
+def test_delayed_activation():
+    dinkum.reset()
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    y.activated_by(source=x, delay=2)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1)
+
+    # set observations
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+
+    # run!
+    dinkum.run(start=1, stop=5)
