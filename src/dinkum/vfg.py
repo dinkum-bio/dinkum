@@ -33,6 +33,9 @@ class Interaction_Activates(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        The gene is active if its source was activate 'delay' ticks ago.
+        """
         assert states
         assert tissue
         assert timepoint is not None
@@ -53,6 +56,10 @@ class Interaction_Or(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        The gene is active if any of its sources were activate 'delay'
+        ticks ago.
+        """
         assert states
         assert tissue
 
@@ -73,6 +80,10 @@ class Interaction_AndNot(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        The gene is active if its activator was active 'delay' ticks ago,
+        and its repressor was _not_ active then.
+        """
         assert states
         assert tissue
 
@@ -94,6 +105,10 @@ class Interaction_And(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        The gene is active if all of its sources were active 'delay' ticks
+        ago.
+        """
         assert states
         assert tissue
 
@@ -114,6 +129,10 @@ class Interaction_ToggleRepressed(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        The gene is active if the tf was active and the cofactor was active
+        'delay' ticks ago.
+        """
         assert states
         assert tissue
 
@@ -137,6 +156,11 @@ class Interaction_Ligand(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        """
+        A Ligand's next state is determined as follows:
+        * its activator is ON
+        * its ligand is currently ON in at least neighboring tissue
+        """
         assert states
         assert tissue
 

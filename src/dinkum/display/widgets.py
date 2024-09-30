@@ -156,7 +156,7 @@ class TissueActivityPanel:
 
         tissue_label_ypos = len(gene_names) * box_total_size + \
             self.box_y_start
-        tissue_label_xpos = self.box_x_start + x_offset + 
+        tissue_label_xpos = self.box_x_start + x_offset + \
             round((box_total_size * len(gene_names)) / 2.0)
 
         canvas.draw_text(self.tissue_name, tissue_label_xpos,

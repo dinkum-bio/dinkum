@@ -49,6 +49,15 @@ class GeneActivity:
 class State:
     """
     Hold the gene activity state for multiple tissues.
+
+    Holds multiple tissue, each with their own GeneActivity object.
+
+    dict interface supports getting and setting gene activity (value) by
+    tissue (key).
+
+    `tissues` attribute provides enumeration of available tissues
+
+    `is_active(gene, tissue)` returns True/False around activity.
     """
     def __init__(self, *, tissues=None, time=None):
         assert tissues is not None
