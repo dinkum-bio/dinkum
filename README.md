@@ -23,4 +23,13 @@ networks". It's also named in honor of one of the course directors,
 who is Australian; it turns out that dinkum is one of the few
 Australian-specific slang words that is not rude.
 
+## Developing dinkum
+
+Dinkum is developed on github under
+[dinkum-bio/dinkum](https://github.com/dinkum-bio/dinkum/). It is
+released under the GNU Affero General Public License v3 open source
+license.
+
+You can run the tests with `make test`.
+
 CTB 10/2024
