@@ -241,6 +241,7 @@ class Gene:
 
 class Receptor(Gene):
     def __init__(self, *, name=None):
+        super().__init__(name=name)
         assert name
         self.name = name
 

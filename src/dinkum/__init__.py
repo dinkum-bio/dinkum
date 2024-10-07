@@ -28,6 +28,8 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
     if not tissue_names:
         tissue_names = vfn.get_tissue_names()
 
+    print('XXX', gene_names)
+
     states, tissues, is_active_fn = tc_record_activity(start=start,
                                                        stop=stop,
                                                        gene_names=gene_names,
