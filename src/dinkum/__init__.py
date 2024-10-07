@@ -1,4 +1,4 @@
-#
+import sys
 from . import vfg
 from . import vfn
 from . import observations
@@ -28,10 +28,15 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
     if not tissue_names:
         tissue_names = vfn.get_tissue_names()
 
-    states, tissues, is_active_fn = tc_record_activity(start=start,
-                                                       stop=stop,
-                                                       gene_names=gene_names,
-                                                       verbose=verbose)
+    try:
+        states, tissues, is_active_fn = tc_record_activity(start=start,
+                                                           stop=stop,
+                                                           gene_names=gene_names,
+                                                           verbose=verbose)
+    except DinkumException as e:
+        print(f"ERROR: {str(e)}", file=sys.stderr)
+        print("Halting execution.", file=sys.stderr)
+        return
 
     #@CTB what is tissues here and how might it differ from tissue_names?
     # perhaps just set it...
@@ -217,7 +222,6 @@ class Timecourse:
 
 def run(start, stop, *, verbose=False):
     # run time course
-    # @CTB redundant?
     tc = Timecourse(start=start, stop=stop)
     tc.run(verbose=verbose)
 
