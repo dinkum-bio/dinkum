@@ -19,6 +19,29 @@ def reset():
     observations.reset()
 
 
+def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
+            verbose=False):
+    "@CTB document."
+    from dinkum.display import MultiTissuePanel, tc_record_activity
+    if not gene_names:
+        gene_names = vfg.get_gene_names()
+    if not tissue_names:
+        tissue_names = vfn.get_tissue_names()
+
+    states, tissues, is_active_fn = tc_record_activity(start=start,
+                                                       stop=stop,
+                                                       gene_names=gene_names,
+                                                       verbose=verbose)
+
+    #@CTB what is tissues here and how might it differ from tissue_names?
+    # perhaps just set it...
+    #print(tissues)
+
+    mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
+                          genes_by_name=gene_names)
+    return mp.draw(is_active_fn)
+
+
 class GeneActivity:
     def __init__(self):
         self.genes_by_name = {}
@@ -194,6 +217,7 @@ class Timecourse:
 
 def run(start, stop, *, verbose=False):
     # run time course
+    # @CTB redundant?
     tc = Timecourse(start=start, stop=stop)
     tc.run(verbose=verbose)
 

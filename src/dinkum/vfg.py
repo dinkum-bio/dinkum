@@ -9,15 +9,22 @@ X binds-and-upregulates Y if A else binds-and-represses
 """
 
 _rules = []
+_gene_names = []
+
 def _add_rule(ix):
     _rules.append(ix)
 
 def get_rules():
     return list(_rules)
 
+def get_gene_names():
+    return list(sorted(_gene_names))
+
 def reset():
     global _rules
+    global _gene_names
     _rules = []
+    _gene_names = []
 
 
 class Interactions:
@@ -181,8 +188,12 @@ class Interaction_Ligand(Interactions):
 
 class Gene:
     def __init__(self, *, name=None):
+        global _gene_names
+
         assert name
         self.name = name
+
+        _gene_names.append(name)
 
     def active(self):           # present = active
         return 1
