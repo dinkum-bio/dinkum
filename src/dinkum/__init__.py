@@ -1,4 +1,4 @@
-#
+import sys
 from . import vfg
 from . import vfn
 from . import observations
@@ -17,6 +17,34 @@ def reset():
     vfg.reset()
     vfn.reset()
     observations.reset()
+
+
+def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
+            verbose=False):
+    "@CTB document."
+    from dinkum.display import MultiTissuePanel, tc_record_activity
+    if not gene_names:
+        gene_names = vfg.get_gene_names()
+    if not tissue_names:
+        tissue_names = vfn.get_tissue_names()
+
+    try:
+        states, tissues, is_active_fn = tc_record_activity(start=start,
+                                                           stop=stop,
+                                                           gene_names=gene_names,
+                                                           verbose=verbose)
+    except DinkumException as e:
+        print(f"ERROR: {str(e)}", file=sys.stderr)
+        print("Halting execution.", file=sys.stderr)
+        return
+
+    #@CTB what is tissues here and how might it differ from tissue_names?
+    # perhaps just set it...
+    #print(tissues)
+
+    mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
+                          genes_by_name=gene_names)
+    return mp.draw(is_active_fn)
 
 
 class GeneActivity:
@@ -49,6 +77,15 @@ class GeneActivity:
 class State:
     """
     Hold the gene activity state for multiple tissues.
+
+    Holds multiple tissue, each with their own GeneActivity object.
+
+    dict interface supports getting and setting gene activity (value) by
+    tissue (key).
+
+    `tissues` attribute provides enumeration of available tissues
+
+    `is_active(gene, tissue)` returns True/False around activity.
     """
     def __init__(self, *, tissues=None, time=None):
         assert tissues is not None

@@ -1,11 +1,12 @@
 [project]
 name = "dinkum"
-version = "0.1"
+version = "0.2"
 description = "directed interaction network kit for modeling"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: Implementation :: CPython",
+"Programming Language :: Python :: Implementation :: CPython",
+"License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
     ]
 dependencies = ["ipycanvas==0.13.1", "Pillow==10.1.0"]
 
