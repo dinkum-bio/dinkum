@@ -7,6 +7,7 @@ X directly-or-indirectly-represses Y
 
 X binds-and-upregulates Y if A else binds-and-represses
 """
+from functools import total_ordering
 
 _rules = []
 _gene_names = []
@@ -194,6 +195,18 @@ class Gene:
         self.name = name
 
         _gene_names.append(name)
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return self.name != other.name
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __hash__(self):
+        return hash(self.name)
 
     def active(self):           # present = active
         return 1
