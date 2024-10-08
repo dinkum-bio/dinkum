@@ -1,5 +1,5 @@
 [project]
-name = "bio-dinkum"
+name = "dinkum-bio"
 version = "0.2.1"
 description = "directed interaction network kit for modeling, focused on GRNs"
 readme = "README.md"
