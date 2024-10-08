@@ -11,7 +11,7 @@ supports simple definition of genes, tissues, ligands/receptors, and
 regulatory influences, and is intended to run in Jupyter
 Notebooks. It's primarily intended for teaching purposes, and was
 developed for the 2024
-[Gene Regulatory Networks for Devleopment](https://www.mbl.edu/education/advanced-research-training-courses/course-offerings/gene-regulatory-networks-development)
+[Gene Regulatory Networks for Development](https://www.mbl.edu/education/advanced-research-training-courses/course-offerings/gene-regulatory-networks-development)
 course at the Marine Biological Laboratory.
 
 To get started with dinkum, see [notebooks/getting-started.ipynb](notebooks/getting-started.ipynb).
