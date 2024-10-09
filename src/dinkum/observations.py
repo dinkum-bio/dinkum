@@ -8,7 +8,7 @@ Y is-down in M at time T
 
 _obs = []
 def _add_obs(ob):
-    assert isinstance(ob, Observation)
+    assert isinstance(ob, Observation), f"{ob} must be an Observation"
     global _obs
     _obs.append(ob)
 
@@ -24,9 +24,9 @@ class Observation:
 
 class Obs_IsPresent(Observation):
     def __init__(self, *, gene=None, time=None, tissue=None):
-        assert gene
-        assert time is not None
-        assert tissue is not None
+        assert gene, "gene must be set"
+        assert time is not None, "time must be set"
+        assert tissue is not None, "tissue must be set"
         self.gene_name = gene
         self.time = time
         self.tissue_name = tissue

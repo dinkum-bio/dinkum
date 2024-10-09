@@ -23,7 +23,7 @@ def reset():
 @total_ordering
 class Tissue:
     def __init__(self, *, name=None):
-        assert name
+        assert name, "Tissue must have a name"
         self.name = name
         self.present = []
         self.neighbors = set()

@@ -34,8 +34,8 @@ class Interactions:
 
 class Interaction_Activates(Interactions):
     def __init__(self, *, source=None, dest=None, delay=1):
-        assert isinstance(source, Gene)
-        assert isinstance(dest, Gene)
+        assert isinstance(source, Gene), f"'{source}' must be a Gene (but is not)"
+        assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
         self.src = source
         self.dest = dest
         self.delay = delay
@@ -57,8 +57,8 @@ class Interaction_Activates(Interactions):
 class Interaction_Or(Interactions):
     def __init__(self, *, sources=None, dest=None, delay=1):
         for g in sources:
-            assert isinstance(g, Gene)
-        assert isinstance(dest, Gene)
+            assert isinstance(g, Gene), f"source '{g}' must be a Gene"
+        assert isinstance(dest, Gene), f"dest '{dest}' must be a Gene"
         self.sources = sources
         self.dest = dest
         self.delay = delay
@@ -191,7 +191,7 @@ class Gene:
     def __init__(self, *, name=None):
         global _gene_names
 
-        assert name
+        assert name, "Gene must have a name"
         self.name = name
 
         _gene_names.append(name)
@@ -240,11 +240,16 @@ class Gene:
 
 
 class Receptor(Gene):
-    def __init__(self, *, name=None):
+    def __init__(self, *, name=None, ligand=None):
         super().__init__(name=name)
         assert name
-        self.name = name
+        self._set_ligand = ligand
 
     def ligand(self, *, activator=None, ligand=None):
+        if ligand is None:
+            ligand = self._set_ligand
+            if ligand is None:
+                raise Exception("need to specify a ligand for this receptor, either at creation or here")
+
         ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)
