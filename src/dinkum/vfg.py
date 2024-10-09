@@ -167,7 +167,7 @@ class Interaction_Ligand(Interactions):
         """
         A Ligand's next state is determined as follows:
         * its activator is ON
-        * its ligand is currently ON in at least neighboring tissue
+        * its ligand is currently ON in at least one neighboring tissue
         """
         assert states
         assert tissue
