@@ -234,42 +234,6 @@ class Interaction_Arbitrary(Interactions):
             yield self.dest, 0
 
 
-class Interaction_Ligand(Interactions):
-    def __init__(self, *, activator=None, ligand=None, receptor=None, delay=1):
-        self.activator = activator
-        self.ligand = ligand
-        self.receptor = receptor
-        self.delay = delay
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        A Ligand's next state is determined as follows:
-        * its activator is ON
-        * its ligand is currently ON in at least one neighboring tissue
-        """
-        assert states
-        assert tissue
-
-        activator_is_active = states.is_active(timepoint, self.delay,
-                                               self.activator, tissue)
-
-        ligands_in_neighbors = _retrieve_ligands(timepoint, states,
-                                                 tissue, self.delay)
-
-        ligand_present = False
-        if self.ligand in ligands_in_neighbors:
-            ligand_present = True
-
-        activity = 0
-        if activator_is_active and self.check_ligand(timepoint,
-                                                     states,
-                                                     tissue,
-                                                     self.delay):
-            activity = 1
-
-        yield self.receptor, activity
-
-
 class Gene:
     def __init__(self, *, name=None):
         global _genes
@@ -369,10 +333,14 @@ class Receptor(Gene):
         else:
             ligand._is_ligand = True
 
-        ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
+        ix = Interaction_Activates(source=activator, dest=self, delay=1)
         _add_rule(ix)
 
-    def activated_by(self, *, activator=None):
-        assert self._set_ligand
-        ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
+    def activated_by(self, *, activator=None, source=None, delay=1):
+        if activator is None:   # @CTB deprecated
+            activator = source
+        if activator is none:
+            raise Exception("must supply an activator!")
+
+        ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
