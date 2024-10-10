@@ -1,13 +1,13 @@
 import pytest
 
 import dinkum
-from dinkum.vfg import Gene, Receptor
+from dinkum.vfg import Gene, Receptor, Ligand
 from dinkum.vfn import Tissue
 from dinkum import Timecourse
 from dinkum import observations
 
 
-def test_signaling():
+def test_signaling_orig_api():
     dinkum.reset()
 
     #observations.check_is_present(gene='R', tissue='M', time=2)
@@ -62,6 +62,38 @@ def test_signaling_new_api():
     r.ligand(activator=a)
 
     y.activated_by(source=r)
+
+    # receptor is always present in M
+    m.add_gene(gene=a, start=1)
+
+    # x is present in N at time >= 2
+    n.add_gene(gene=x, start=2)
+
+    dinkum.run(1, 5)
+
+
+def test_signaling_new_api_3():
+    dinkum.reset()
+
+    #observations.check_is_present(gene='R', tissue='M', time=2)
+    observations.check_is_present(gene='X', tissue='N', time=2)
+    observations.check_is_not_present(gene='Y', tissue='M', time=2)
+    observations.check_is_present(gene='Y', tissue='M', time=4)
+
+    m = Tissue(name='M')
+    n = Tissue(name='N')
+
+    m.add_neighbor(neighbor=n)
+    assert n in m.neighbors     # should this be bidirectional? probably.
+
+    x = Ligand(name='X')
+    a = Gene(name='A')
+    r = Receptor(name='R', ligand=x)
+    y = Gene(name='Y')
+
+    r.ligand(activator=a)
+
+    y.activated_by(source=r)    # @CTB update.
 
     # receptor is always present in M
     m.add_gene(gene=a, start=1)
