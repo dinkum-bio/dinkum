@@ -35,14 +35,10 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
     ligands = set()
     for gene in _genes:
-        print(f'is {gene} a ligand?')
         if gene._is_ligand:
-            print('XXX', gene, tissue.neighbors)
             for neighbor in tissue.neighbors:
                 if states.is_active(timepoint, delay, gene, neighbor):
                     ligands.add(gene)
-        else:
-             print('nope')
 
     return ligands
 
@@ -52,14 +48,14 @@ class Interactions:
 
     def check_ligand(self, timepoint, states, tissue, delay):
         if getattr(self.dest, '_set_ligand', None):
-            print(self.dest, "is a receptor w/ a ligand")
+            #print(self.dest, "is a receptor w/ a ligand")
             ligands_in_neighbors = _retrieve_ligands(timepoint, states,
                                                      tissue, delay)
             if self.dest._set_ligand in ligands_in_neighbors:
                 return True
             return False
         else:
-            print(self.dest, "is not a receptor")
+            #print(self.dest, "is not a receptor")
             return True         # by default, not ligand => is active
 
 
@@ -77,19 +73,14 @@ class Interaction_IsPresent(Interactions):
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # ignore states
-        active = False
         if tissue == self.tissue:
             if timepoint >= self.start:
                 if self.duration is None or \
-                   timepoint < self.start + self.duration:
-                    active = True
+                   timepoint < self.start + self.duration: # active!
+                    if self.check_ligand(timepoint, states, tissue, delay=1):
+                        yield self.dest, 1
 
-        if active:
-            print('xxx active', self.dest, timepoint, tissue, self.tissue)
-            yield self.dest, 1
-        else:
-            #print('xxx inactive', self.dest, timepoint, tissue, self.tissue)
-            yield self.dest, 0
+        # we have no opinion on activity outside our tissue!
 
 
 class Interaction_Activates(Interactions):
@@ -104,7 +95,9 @@ class Interaction_Activates(Interactions):
         """
         The gene is active if its source was active 'delay' ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
         assert timepoint is not None
 
@@ -132,7 +125,9 @@ class Interaction_Or(Interactions):
         The gene is active if any of its sources were activate 'delay'
         ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
@@ -159,7 +154,9 @@ class Interaction_AndNot(Interactions):
         The gene is active if its activator was active 'delay' ticks ago,
         and its repressor was _not_ active then.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         src_is_active = states.is_active(timepoint, self.delay,
@@ -188,7 +185,9 @@ class Interaction_And(Interactions):
         The gene is active if all of its sources were active 'delay' ticks
         ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
@@ -215,7 +214,9 @@ class Interaction_ToggleRepressed(Interactions):
         The gene is active if the tf was active and the cofactor was active
         'delay' ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         tf_active = states.is_active(timepoint, self.delay,
@@ -243,7 +244,9 @@ class Interaction_Arbitrary(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         dep_gene_names = inspect.getfullargspec(self.state_fn).args
