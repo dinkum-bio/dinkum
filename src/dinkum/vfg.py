@@ -8,9 +8,10 @@ X directly-or-indirectly-represses Y
 X binds-and-upregulates Y if A else binds-and-represses
 """
 from functools import total_ordering
+import inspect
 
 _rules = []
-_gene_names = []
+_genes = []
 
 def _add_rule(ix):
     _rules.append(ix)
@@ -19,13 +20,13 @@ def get_rules():
     return list(_rules)
 
 def get_gene_names():
-    return list(sorted(_gene_names))
+    return [ g.name for g in sorted(_genes) ]
 
 def reset():
     global _rules
-    global _gene_names
+    global _genes
     _rules = []
-    _gene_names = []
+    _genes = []
 
 
 class Interactions:
@@ -156,6 +157,41 @@ class Interaction_ToggleRepressed(Interactions):
             yield self.dest, 0
 
 
+class Interaction_Arbitrary(Interactions):
+    def __init__(self, *, dest=None, state_fn=None, delay=1):
+        assert dest
+        assert state_fn
+
+        self.dest = dest
+        self.state_fn = state_fn
+        self.delay = delay
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
+        assert tissue
+
+        dep_gene_names = inspect.getfullargspec(self.state_fn).args
+        dep_genes = []
+        for name in dep_gene_names:
+            found = False
+            for g in _genes:
+                if g.name == name:
+                    dep_genes.append(g)
+                    found = True
+                    break
+            if not found:
+                raise Exception(f"no such gene: '{name}'")
+
+        dep_state = [ states.is_active(timepoint, self.delay, g, tissue)
+                      for g in dep_genes ]
+        is_active = self.state_fn(*dep_state)
+
+        if is_active:
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
+
+
 class Interaction_Ligand(Interactions):
     def __init__(self, *, activator=None, ligand=None, receptor=None, delay=1):
         self.activator = activator
@@ -189,12 +225,12 @@ class Interaction_Ligand(Interactions):
 
 class Gene:
     def __init__(self, *, name=None):
-        global _gene_names
+        global _genes
 
         assert name, "Gene must have a name"
         self.name = name
 
-        _gene_names.append(name)
+        _genes.append(self)
 
     def __eq__(self, other):
         return self.name == other.name
@@ -237,6 +273,10 @@ class Gene:
         assert where
         assert start
         where.add_gene(gene=self, start=start, duration=duration)
+
+    def custom_activation(self, *, state_fn=None, delay=1):
+        ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
+        _add_rule(ix)
 
 
 class Receptor(Gene):
