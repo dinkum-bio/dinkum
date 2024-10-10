@@ -231,6 +231,7 @@ class Gene:
         self.name = name
 
         _genes.append(self)
+        self._set_ligand = None
 
     def __eq__(self, other):
         return self.name == other.name
@@ -244,8 +245,14 @@ class Gene:
     def __hash__(self):
         return hash(self.name)
 
-    def active(self):           # present = active
+    def present(self):
         return 1
+
+    def ligand_present(self):
+        return (self._set_ligand is None) or 1 # @CTB
+
+    def active(self):           # present = active
+        return self.present() and self.ligand_present()
 
     def activated_by(self, *, source=None, delay=1):
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
@@ -286,6 +293,15 @@ class Receptor(Gene):
         self._set_ligand = ligand
 
     def ligand(self, *, activator=None, ligand=None):
+        if ligand is None:
+            ligand = self._set_ligand
+            if ligand is None:
+                raise Exception("need to specify a ligand for this receptor, either at creation or here")
+
+        ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
+        _add_rule(ix)
+
+    def activated_by(self, *, activator=None, ligand=None):
         if ligand is None:
             ligand = self._set_ligand
             if ligand is None:
