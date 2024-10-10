@@ -338,11 +338,7 @@ class Receptor(Gene):
         ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)
 
-    def activated_by(self, *, activator=None, ligand=None):
-        if ligand is None:
-            ligand = self._set_ligand
-            if ligand is None:
-                raise Exception("need to specify a ligand for this receptor, either at creation or here")
-
+    def activated_by(self, *, activator=None):
+        assert self._set_ligand
         ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)
