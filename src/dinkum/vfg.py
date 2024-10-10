@@ -57,7 +57,7 @@ class Interaction_Activates(Interactions):
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
-        The gene is active if its source was activate 'delay' ticks ago.
+        The gene is active if its source was active 'delay' ticks ago.
         """
         assert states
         assert tissue
@@ -272,7 +272,10 @@ class Gene:
         return (self._set_ligand is None) or 1 # @CTB
 
     def active(self):           # present = active
-        return self.present() and self.ligand_present()
+        if self._is_ligand:
+            return self.present() and self.ligand_present()
+        else:
+            return self.present()
 
     def activated_by(self, *, source=None, delay=1):
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
