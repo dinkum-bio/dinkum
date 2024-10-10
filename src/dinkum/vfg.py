@@ -29,6 +29,20 @@ def reset():
     _genes = []
 
 
+def _retrieve_ligands(timepoint, states, tissue, delay):
+    "Retrieve all ligands in neighboring tissues for the given timepoint/delay"
+    #assert isinstance(tissue, Tissue)
+
+    ligands = set()
+    for gene in _genes:
+        if gene._is_ligand:
+            for neighbor in tissue.neighbors:
+                if states.is_active(timepoint, delay, gene, neighbor):
+                    ligands.add(gene)
+
+    return ligands
+
+
 class Interactions:
     pass
 
@@ -210,14 +224,16 @@ class Interaction_Ligand(Interactions):
 
         activator_is_active = states.is_active(timepoint, self.delay,
                                                self.activator, tissue)
-        ligand_in_neighbors = []
-        for neighbor in tissue.neighbors:
-            neighbor_active = states.is_active(timepoint, self.delay,
-                                               self.ligand, neighbor)
-            ligand_in_neighbors.append(neighbor_active)
+
+        ligands_in_neighbors = _retrieve_ligands(timepoint, states,
+                                                 tissue, self.delay)
+
+        ligand_present = False
+        if self.ligand in ligands_in_neighbors:
+            ligand_present = True
 
         activity = 0
-        if activator_is_active and any(ligand_in_neighbors):
+        if activator_is_active and ligand_present:
             activity = 1
 
         yield self.receptor, activity
@@ -232,6 +248,10 @@ class Gene:
 
         _genes.append(self)
         self._set_ligand = None
+        self._is_ligand = None
+
+    def __repr__(self):
+        return f"Gene('{self.name}')"
 
     def __eq__(self, other):
         return self.name == other.name
@@ -286,17 +306,34 @@ class Gene:
         _add_rule(ix)
 
 
+class Ligand(Gene):
+    def __init__(self, *, name=None):
+        super().__init__(name=name)
+        self._is_ligand = True
+
+    def __repr__(self):
+        return f"Ligand('{self.name}')"
+
+
 class Receptor(Gene):
     def __init__(self, *, name=None, ligand=None):
         super().__init__(name=name)
         assert name
         self._set_ligand = ligand
+        if ligand:
+            ligand._is_ligand = True
+
+    def __repr__(self):
+        return f"Receptor('{self.name}')"
 
     def ligand(self, *, activator=None, ligand=None):
+        # @CTB legacy
         if ligand is None:
             ligand = self._set_ligand
             if ligand is None:
                 raise Exception("need to specify a ligand for this receptor, either at creation or here")
+        else:
+            ligand._is_ligand = True
 
         ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)
