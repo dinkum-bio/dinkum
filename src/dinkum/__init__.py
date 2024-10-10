@@ -1,4 +1,8 @@
 import sys
+from importlib.metadata import version
+
+__version__ = version("dinkum-bio")
+
 from . import vfg
 from . import vfn
 from . import observations
@@ -13,10 +17,12 @@ class DinkumObservationFailed(DinkumException):
     pass
 
 
-def reset():
+def reset(*, verbose=True):
     vfg.reset()
     vfn.reset()
     observations.reset()
+    if verbose:
+        print(f"initializing: dinkum v{__version__}")
 
 
 def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
