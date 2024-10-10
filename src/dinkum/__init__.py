@@ -198,6 +198,7 @@ class Timecourse:
                                                  tissue=t):
                         if g.name in seen and not r.multiple_allowed:
                             raise DinkumException(f"multiple rules containing {g.name}")
+                        print('zzz', t, g, activity)
                         next_active.set_activity(gene=g, active=activity)
                         if not r.multiple_allowed:
                             seen.add(g.name)

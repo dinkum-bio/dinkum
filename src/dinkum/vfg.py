@@ -77,12 +77,18 @@ class Interaction_IsPresent(Interactions):
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # ignore states
+        active = False
         if tissue == self.tissue:
             if timepoint >= self.start:
                 if self.duration is None or \
                    timepoint < self.start + self.duration:
-                    yield self.dest, 1
+                    active = True
+
+        if active:
+            print('xxx active', self.dest, timepoint, tissue, self.tissue)
+            yield self.dest, 1
         else:
+            #print('xxx inactive', self.dest, timepoint, tissue, self.tissue)
             yield self.dest, 0
 
 
