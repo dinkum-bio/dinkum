@@ -44,6 +44,8 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
 
 class Interactions:
+    multiple_allowed = False
+
     def check_ligand(self, timepoint, states, tissue, delay):
         if getattr(self, 'ligand', None):
             ligands_in_neighbors = _retrieve_ligands(timepoint, states,
@@ -53,6 +55,29 @@ class Interactions:
             return False
         else:
             return True         # by default, not ligand => is active
+
+
+class Interaction_IsPresent(Interactions):
+    multiple_allowed = True
+
+    def __init__(self, *, dest=None, start=None, duration=None, tissue=None):
+        assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
+        assert start is not None, "must provide start time"
+        assert tissue
+        self.dest = dest
+        self.tissue = tissue
+        self.start = start
+        self.duration = duration
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        # ignore states
+        if tissue == self.tissue:
+            if timepoint >= self.start:
+                if self.duration is None or \
+                   timepoint < self.start + self.duration:
+                    yield self.dest, 1
+        else:
+            yield self.dest, 0
 
 
 class Interaction_Activates(Interactions):
@@ -297,7 +322,9 @@ class Gene:
     def is_present(self, *, where=None, start=None, duration=None):
         assert where
         assert start
-        where.add_gene(gene=self, start=start, duration=duration)
+        ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
+                                   tissue=where)
+        _add_rule(ix)
 
     def custom_activation(self, *, state_fn=None, delay=1):
         ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
