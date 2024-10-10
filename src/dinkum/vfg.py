@@ -339,7 +339,7 @@ class Receptor(Gene):
     def activated_by(self, *, activator=None, source=None, delay=1):
         if activator is None:   # @CTB deprecated
             activator = source
-        if activator is none:
+        if activator is None:
             raise Exception("must supply an activator!")
 
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
