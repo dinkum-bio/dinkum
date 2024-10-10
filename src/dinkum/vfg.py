@@ -44,7 +44,15 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
 
 class Interactions:
-    pass
+    def check_ligand(self, timepoint, states, tissue, delay):
+        if getattr(self, 'ligand', None):
+            ligands_in_neighbors = _retrieve_ligands(timepoint, states,
+                                                     tissue, delay)
+            if self.ligand in ligands_in_neighbors:
+                return True
+            return False
+        else:
+            return True         # by default, not ligand => is active
 
 
 class Interaction_Activates(Interactions):
@@ -63,7 +71,11 @@ class Interaction_Activates(Interactions):
         assert tissue
         assert timepoint is not None
 
-        if states.is_active(timepoint, self.delay, self.src, tissue):
+        if states.is_active(timepoint, self.delay, self.src, tissue) and \
+           self.check_ligand(timepoint,
+                             states,
+                             tissue,
+                             self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -89,7 +101,10 @@ class Interaction_Or(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if any(source_active):
+        if any(source_active) and self.check_ligand(timepoint,
+                                                    states,
+                                                    tissue,
+                                                    self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -115,7 +130,11 @@ class Interaction_AndNot(Interactions):
         repressor_is_active = states.is_active(timepoint, self.delay,
                                               self.repressor, tissue)
 
-        if src_is_active and not repressor_is_active:
+        if src_is_active and not repressor_is_active and \
+           self.check_ligand(timepoint,
+                             states,
+                             tissue,
+                             self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -138,7 +157,10 @@ class Interaction_And(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if all(source_active):
+        if all(source_active) and self.check_ligand(timepoint,
+                                                    states,
+                                                    tissue,
+                                                    self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -165,7 +187,10 @@ class Interaction_ToggleRepressed(Interactions):
                                            self.cofactor, tissue)
 
 
-        if tf_active and not cofactor_active:
+        if tf_active and not cofactor_active and self.check_ligand(timepoint,
+                                                                   states,
+                                                                   tissue,
+                                                                   self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -200,7 +225,10 @@ class Interaction_Arbitrary(Interactions):
                       for g in dep_genes ]
         is_active = self.state_fn(*dep_state)
 
-        if is_active:
+        if is_active and self.check_ligand(timepoint,
+                                           states,
+                                           tissue,
+                                           self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -233,7 +261,10 @@ class Interaction_Ligand(Interactions):
             ligand_present = True
 
         activity = 0
-        if activator_is_active and ligand_present:
+        if activator_is_active and self.check_ligand(timepoint,
+                                                     states,
+                                                     tissue,
+                                                     self.delay):
             activity = 1
 
         yield self.receptor, activity
