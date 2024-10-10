@@ -181,7 +181,7 @@ class Timecourse:
         for t in tissues:
             this_active = GeneActivity()
             this_state[t] = this_active
-            self.states_d[start] = this_state
+        self.states_d[start] = this_state
 
         # advance one tick at a time
         for tp in range(start, stop + 1):
