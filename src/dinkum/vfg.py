@@ -35,10 +35,14 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
     ligands = set()
     for gene in _genes:
+        print(f'is {gene} a ligand?')
         if gene._is_ligand:
+            print('XXX', gene, tissue.neighbors)
             for neighbor in tissue.neighbors:
                 if states.is_active(timepoint, delay, gene, neighbor):
                     ligands.add(gene)
+        else:
+             print('nope')
 
     return ligands
 
@@ -47,13 +51,15 @@ class Interactions:
     multiple_allowed = False
 
     def check_ligand(self, timepoint, states, tissue, delay):
-        if getattr(self, 'ligand', None):
+        if getattr(self.dest, '_set_ligand', None):
+            print(self.dest, "is a receptor w/ a ligand")
             ligands_in_neighbors = _retrieve_ligands(timepoint, states,
                                                      tissue, delay)
-            if self.ligand in ligands_in_neighbors:
+            if self.dest._set_ligand in ligands_in_neighbors:
                 return True
             return False
         else:
+            print(self.dest, "is not a receptor")
             return True         # by default, not ligand => is active
 
 
