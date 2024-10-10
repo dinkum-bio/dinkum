@@ -57,6 +57,9 @@ class GeneActivity:
     def __init__(self):
         self.genes_by_name = {}
 
+    def __repr__(self):
+        return repr(self.genes_by_name)
+
     def set_activity(self, *, gene=None, active=None):
         assert gene
         assert active is not None
@@ -176,44 +179,29 @@ class Timecourse:
                 print(f"\ttissue {t.name}")
             print('')
 
-        # initialize state at start for all tissues
-        this_state = State(tissues=tissues, time=start)
-        for t in tissues:
-            this_active = GeneActivity()
-            for g in t.all_active(at=start):
-                this_active.set_activity(gene=g, active=True)
-
-            this_state[t] = this_active
-
-        self.states_d[start] = this_state
-
         # advance one tick at a time
-        for tp in range(start + 1, stop + 1):
+        this_state = {}
+        for tp in range(start, stop + 1):
             next_state = State(tissues=tissues, time=tp)
 
             for t in tissues:
-                this_active = this_state[t]
-
-                next_active = GeneActivity()
-
-                # bring in maternal/always active
                 seen = set()
-                for g in t.all_active(at=tp):
-                    next_active.set_activity(gene=g, active=1)
-                    seen.add(g.name)
-
+                next_active = GeneActivity()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
                     for g, activity in r.advance(timepoint=tp,
                                                  states=self.states_d,
                                                  tissue=t):
-                        if g.name in seen:
+                        if g.name in seen and not r.multiple_allowed:
                             raise DinkumException(f"multiple rules containing {g.name}")
+                        #print('zzz', t, g, activity)
                         next_active.set_activity(gene=g, active=activity)
-                        seen.add(g.name)
+                        if not r.multiple_allowed:
+                            seen.add(g.name)
 
 
                 next_state[t] = next_active
+                #print('fff', t, next_active)
 
             # advance => next state
             self.states_d[tp] = next_state

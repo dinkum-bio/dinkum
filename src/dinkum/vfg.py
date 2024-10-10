@@ -44,15 +44,43 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
 
 class Interactions:
+    multiple_allowed = False
+
     def check_ligand(self, timepoint, states, tissue, delay):
-        if getattr(self, 'ligand', None):
+        if getattr(self.dest, '_set_ligand', None):
+            #print(self.dest, "is a receptor w/ a ligand")
             ligands_in_neighbors = _retrieve_ligands(timepoint, states,
                                                      tissue, delay)
-            if self.ligand in ligands_in_neighbors:
+            if self.dest._set_ligand in ligands_in_neighbors:
                 return True
             return False
         else:
+            #print(self.dest, "is not a receptor")
             return True         # by default, not ligand => is active
+
+
+class Interaction_IsPresent(Interactions):
+    multiple_allowed = True
+
+    def __init__(self, *, dest=None, start=None, duration=None, tissue=None):
+        assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
+        assert start is not None, "must provide start time"
+        assert tissue
+        self.dest = dest
+        self.tissue = tissue
+        self.start = start
+        self.duration = duration
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        # ignore states
+        if tissue == self.tissue:
+            if timepoint >= self.start:
+                if self.duration is None or \
+                   timepoint < self.start + self.duration: # active!
+                    if self.check_ligand(timepoint, states, tissue, delay=1):
+                        yield self.dest, 1
+
+        # we have no opinion on activity outside our tissue!
 
 
 class Interaction_Activates(Interactions):
@@ -67,7 +95,9 @@ class Interaction_Activates(Interactions):
         """
         The gene is active if its source was active 'delay' ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
         assert timepoint is not None
 
@@ -95,7 +125,9 @@ class Interaction_Or(Interactions):
         The gene is active if any of its sources were activate 'delay'
         ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
@@ -122,7 +154,9 @@ class Interaction_AndNot(Interactions):
         The gene is active if its activator was active 'delay' ticks ago,
         and its repressor was _not_ active then.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         src_is_active = states.is_active(timepoint, self.delay,
@@ -151,7 +185,9 @@ class Interaction_And(Interactions):
         The gene is active if all of its sources were active 'delay' ticks
         ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
@@ -178,7 +214,9 @@ class Interaction_ToggleRepressed(Interactions):
         The gene is active if the tf was active and the cofactor was active
         'delay' ticks ago.
         """
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         tf_active = states.is_active(timepoint, self.delay,
@@ -206,7 +244,9 @@ class Interaction_Arbitrary(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
-        assert states
+        if not states:
+            return
+
         assert tissue
 
         dep_gene_names = inspect.getfullargspec(self.state_fn).args
@@ -297,7 +337,9 @@ class Gene:
     def is_present(self, *, where=None, start=None, duration=None):
         assert where
         assert start
-        where.add_gene(gene=self, start=start, duration=duration)
+        ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
+                                   tissue=where)
+        _add_rule(ix)
 
     def custom_activation(self, *, state_fn=None, delay=1):
         ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)

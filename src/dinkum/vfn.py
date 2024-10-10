@@ -25,10 +25,12 @@ class Tissue:
     def __init__(self, *, name=None):
         assert name, "Tissue must have a name"
         self.name = name
-        self.present = []
         self.neighbors = set()
 
         _add_tissue(self)
+
+    def __repr__(self):
+        return f"Tissue('{self.name}')"
 
     def __eq__(self, other):
         return self.name == other.name
@@ -45,17 +47,8 @@ class Tissue:
     def add_gene(self, *, gene=None, start=None, duration=None):
         assert gene
         assert start is not None
-        self.present.append((gene, start, duration))
+        gene.is_present(start=start, duration=duration, where=self)
 
     def add_neighbor(self, *, neighbor=None):
         assert neighbor
         self.neighbors.add(neighbor)
-
-    def all_active(self, *, at=None):
-        assert at is not None
-        for gene, start, duration in self.present:
-            if at >= start:
-                if duration is None:
-                    yield gene
-                elif at < start + duration:
-                    yield gene
