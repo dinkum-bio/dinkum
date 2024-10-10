@@ -8,9 +8,10 @@ X directly-or-indirectly-represses Y
 X binds-and-upregulates Y if A else binds-and-represses
 """
 from functools import total_ordering
+import inspect
 
 _rules = []
-_gene_names = []
+_genes = []
 
 def _add_rule(ix):
     _rules.append(ix)
@@ -19,36 +20,62 @@ def get_rules():
     return list(_rules)
 
 def get_gene_names():
-    return list(sorted(_gene_names))
+    return [ g.name for g in sorted(_genes) ]
 
 def reset():
     global _rules
-    global _gene_names
+    global _genes
     _rules = []
-    _gene_names = []
+    _genes = []
+
+
+def _retrieve_ligands(timepoint, states, tissue, delay):
+    "Retrieve all ligands in neighboring tissues for the given timepoint/delay"
+    #assert isinstance(tissue, Tissue)
+
+    ligands = set()
+    for gene in _genes:
+        if gene._is_ligand:
+            for neighbor in tissue.neighbors:
+                if states.is_active(timepoint, delay, gene, neighbor):
+                    ligands.add(gene)
+
+    return ligands
 
 
 class Interactions:
-    pass
+    def check_ligand(self, timepoint, states, tissue, delay):
+        if getattr(self, 'ligand', None):
+            ligands_in_neighbors = _retrieve_ligands(timepoint, states,
+                                                     tissue, delay)
+            if self.ligand in ligands_in_neighbors:
+                return True
+            return False
+        else:
+            return True         # by default, not ligand => is active
 
 
 class Interaction_Activates(Interactions):
     def __init__(self, *, source=None, dest=None, delay=1):
-        assert isinstance(source, Gene)
-        assert isinstance(dest, Gene)
+        assert isinstance(source, Gene), f"'{source}' must be a Gene (but is not)"
+        assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
         self.src = source
         self.dest = dest
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
-        The gene is active if its source was activate 'delay' ticks ago.
+        The gene is active if its source was active 'delay' ticks ago.
         """
         assert states
         assert tissue
         assert timepoint is not None
 
-        if states.is_active(timepoint, self.delay, self.src, tissue):
+        if states.is_active(timepoint, self.delay, self.src, tissue) and \
+           self.check_ligand(timepoint,
+                             states,
+                             tissue,
+                             self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -57,8 +84,8 @@ class Interaction_Activates(Interactions):
 class Interaction_Or(Interactions):
     def __init__(self, *, sources=None, dest=None, delay=1):
         for g in sources:
-            assert isinstance(g, Gene)
-        assert isinstance(dest, Gene)
+            assert isinstance(g, Gene), f"source '{g}' must be a Gene"
+        assert isinstance(dest, Gene), f"dest '{dest}' must be a Gene"
         self.sources = sources
         self.dest = dest
         self.delay = delay
@@ -74,7 +101,10 @@ class Interaction_Or(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if any(source_active):
+        if any(source_active) and self.check_ligand(timepoint,
+                                                    states,
+                                                    tissue,
+                                                    self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -100,7 +130,11 @@ class Interaction_AndNot(Interactions):
         repressor_is_active = states.is_active(timepoint, self.delay,
                                               self.repressor, tissue)
 
-        if src_is_active and not repressor_is_active:
+        if src_is_active and not repressor_is_active and \
+           self.check_ligand(timepoint,
+                             states,
+                             tissue,
+                             self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -123,7 +157,10 @@ class Interaction_And(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if all(source_active):
+        if all(source_active) and self.check_ligand(timepoint,
+                                                    states,
+                                                    tissue,
+                                                    self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -150,7 +187,48 @@ class Interaction_ToggleRepressed(Interactions):
                                            self.cofactor, tissue)
 
 
-        if tf_active and not cofactor_active:
+        if tf_active and not cofactor_active and self.check_ligand(timepoint,
+                                                                   states,
+                                                                   tissue,
+                                                                   self.delay):
+            yield self.dest, 1
+        else:
+            yield self.dest, 0
+
+
+class Interaction_Arbitrary(Interactions):
+    def __init__(self, *, dest=None, state_fn=None, delay=1):
+        assert dest
+        assert state_fn
+
+        self.dest = dest
+        self.state_fn = state_fn
+        self.delay = delay
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert states
+        assert tissue
+
+        dep_gene_names = inspect.getfullargspec(self.state_fn).args
+        dep_genes = []
+        for name in dep_gene_names:
+            found = False
+            for g in _genes:
+                if g.name == name:
+                    dep_genes.append(g)
+                    found = True
+                    break
+            if not found:
+                raise Exception(f"no such gene: '{name}'")
+
+        dep_state = [ states.is_active(timepoint, self.delay, g, tissue)
+                      for g in dep_genes ]
+        is_active = self.state_fn(*dep_state)
+
+        if is_active and self.check_ligand(timepoint,
+                                           states,
+                                           tissue,
+                                           self.delay):
             yield self.dest, 1
         else:
             yield self.dest, 0
@@ -167,21 +245,26 @@ class Interaction_Ligand(Interactions):
         """
         A Ligand's next state is determined as follows:
         * its activator is ON
-        * its ligand is currently ON in at least neighboring tissue
+        * its ligand is currently ON in at least one neighboring tissue
         """
         assert states
         assert tissue
 
         activator_is_active = states.is_active(timepoint, self.delay,
                                                self.activator, tissue)
-        ligand_in_neighbors = []
-        for neighbor in tissue.neighbors:
-            neighbor_active = states.is_active(timepoint, self.delay,
-                                               self.ligand, neighbor)
-            ligand_in_neighbors.append(neighbor_active)
+
+        ligands_in_neighbors = _retrieve_ligands(timepoint, states,
+                                                 tissue, self.delay)
+
+        ligand_present = False
+        if self.ligand in ligands_in_neighbors:
+            ligand_present = True
 
         activity = 0
-        if activator_is_active and any(ligand_in_neighbors):
+        if activator_is_active and self.check_ligand(timepoint,
+                                                     states,
+                                                     tissue,
+                                                     self.delay):
             activity = 1
 
         yield self.receptor, activity
@@ -189,12 +272,17 @@ class Interaction_Ligand(Interactions):
 
 class Gene:
     def __init__(self, *, name=None):
-        global _gene_names
+        global _genes
 
-        assert name
+        assert name, "Gene must have a name"
         self.name = name
 
-        _gene_names.append(name)
+        _genes.append(self)
+        self._set_ligand = None
+        self._is_ligand = None
+
+    def __repr__(self):
+        return f"Gene('{self.name}')"
 
     def __eq__(self, other):
         return self.name == other.name
@@ -208,8 +296,17 @@ class Gene:
     def __hash__(self):
         return hash(self.name)
 
-    def active(self):           # present = active
+    def present(self):
         return 1
+
+    def ligand_present(self):
+        return (self._set_ligand is None) or 1 # @CTB
+
+    def active(self):           # present = active
+        if self._is_ligand:
+            return self.present() and self.ligand_present()
+        else:
+            return self.present()
 
     def activated_by(self, *, source=None, delay=1):
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
@@ -238,13 +335,44 @@ class Gene:
         assert start
         where.add_gene(gene=self, start=start, duration=duration)
 
+    def custom_activation(self, *, state_fn=None, delay=1):
+        ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
+        _add_rule(ix)
 
-class Receptor(Gene):
+
+class Ligand(Gene):
     def __init__(self, *, name=None):
         super().__init__(name=name)
+        self._is_ligand = True
+
+    def __repr__(self):
+        return f"Ligand('{self.name}')"
+
+
+class Receptor(Gene):
+    def __init__(self, *, name=None, ligand=None):
+        super().__init__(name=name)
         assert name
-        self.name = name
+        self._set_ligand = ligand
+        if ligand:
+            ligand._is_ligand = True
+
+    def __repr__(self):
+        return f"Receptor('{self.name}')"
 
     def ligand(self, *, activator=None, ligand=None):
+        # @CTB legacy
+        if ligand is None:
+            ligand = self._set_ligand
+            if ligand is None:
+                raise Exception("need to specify a ligand for this receptor, either at creation or here")
+        else:
+            ligand._is_ligand = True
+
+        ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
+        _add_rule(ix)
+
+    def activated_by(self, *, activator=None):
+        assert self._set_ligand
         ix = Interaction_Ligand(activator=activator, ligand=ligand, receptor=self)
         _add_rule(ix)
