@@ -26,8 +26,21 @@ def reset(*, verbose=True):
 
 
 def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
-            verbose=False):
-    "@CTB document."
+                    verbose=False, save_image=None):
+    """
+    Run and display the circuit model.
+
+    Key parameter:
+    - start (default: 1)
+    - stop (default 10)
+
+    Other parameters:
+    - 'tissue_names' - a list of tissue names to display (default: all).
+    - 'gene_names' - a list of gene names to display (default: all).
+    - 'verbose' - display more text output.
+    - 'save_image' - save image to this file.
+    - 'canvas_type' - 'ipycanvas' or 'pillow' (default: 'pillow')
+    """
     from dinkum.display import MultiTissuePanel, tc_record_activity
     if not gene_names:
         gene_names = vfg.get_gene_names()
@@ -35,21 +48,19 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
         tissue_names = vfn.get_tissue_names()
 
     try:
-        states, tissues, is_active_fn = tc_record_activity(start=start,
-                                                           stop=stop,
-                                                           gene_names=gene_names,
-                                                           verbose=verbose)
+        states, tissues, is_active_fn = \
+            tc_record_activity(start=start,
+                               stop=stop,
+                               gene_names=gene_names,
+                               verbose=verbose)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
         return
 
-    #@CTB what is tissues here and how might it differ from tissue_names?
-    # perhaps just set it...
-    #print(tissues)
-
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
-                          genes_by_name=gene_names)
+                          genes_by_name=gene_names,
+                          save_image=save_image)
     return mp.draw(is_active_fn)
 
 
