@@ -7,7 +7,7 @@ class IpycanvasDrawer:
         self.canvas.font = "18px Arial"
         self.canvas.text_baseline = "top"
 
-        if 'save_image' in kwargs and 0:
+        if 'save_image' in kwargs:
             # define callback per
             # https://ipycanvas.readthedocs.io/en/latest/retrieve_images.html
             def save_to_file(*args, **kwargs):
@@ -26,3 +26,7 @@ class IpycanvasDrawer:
 
     def image(self):
         return self.canvas
+
+    def save(self):
+        # handled via callback, above.
+        pass

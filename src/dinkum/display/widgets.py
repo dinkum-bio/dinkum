@@ -10,7 +10,7 @@ class MultiTissuePanel:
     in each one.
     """
     def __init__(self, *, states=None, tissue_names=None, save_image=None,
-                 canvas_type=None, genes_by_name=None):
+                 canvas_type='pillow', genes_by_name=None):
         # create individual panels for each tissue
         self.panels = [ TissueActivityPanel(states=states, tissue_name=t,
                                             genes_by_name=genes_by_name)
@@ -42,8 +42,10 @@ class MultiTissuePanel:
                                      height=max_height,
                                      save_image=self.save_image)
         else:
+            assert self.canvas_type == 'pillow'
             canvas = PillowDrawer(width=total_width,
-                                  height=max_height)
+                                  height=max_height,
+                                  save_image=self.save_image)
 
         # draw each tissue, with each collection of genes,
         # spread out horizontally
@@ -55,6 +57,9 @@ class MultiTissuePanel:
             gene_names = p.gene_names
             times = p.times
             d.draw(canvas, times, gene_names, is_active_fn)
+
+        if self.save_image:
+            canvas.save()
             
         return canvas.image()
 

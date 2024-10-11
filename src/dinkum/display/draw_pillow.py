@@ -5,6 +5,7 @@ class PillowDrawer:
     def __init__(self, *, width=None, height=None, **kwargs):
         self.im = Image.new('RGB', (width, height), 'white')
         self.imdraw = ImageDraw.Draw(self.im)
+        self.save_image = kwargs.get('save_image')
 
     def polygon(self, coords, fill):
         self.imdraw.polygon(coords, fill=fill)
@@ -21,3 +22,7 @@ class PillowDrawer:
         
     def image(self):
         return self.im
+
+    def save(self):
+        print('YYY saving')
+        self.im.save(self.save_image)
