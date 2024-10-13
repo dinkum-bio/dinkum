@@ -3,12 +3,13 @@ from importlib.metadata import version
 
 __version__ = version("dinkum-bio")
 
-from . import vfg
-from . import vfn
-from . import observations
-
 import itertools
 import collections
+
+from . import vfg
+from .vfg import GeneStateInfo, DEFAULT_OFF
+from . import vfn
+from . import observations
 
 class DinkumException(Exception):
     pass
@@ -64,20 +65,21 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
     return mp.draw(is_active_fn)
 
 
-class GeneActivity:
+class GeneStates:
     def __init__(self):
         self.genes_by_name = {}
 
     def __repr__(self):
         return repr(self.genes_by_name)
 
-    def set_activity(self, *, gene=None, active=None):
-        assert gene
-        assert active is not None
-        self.genes_by_name[gene.name] = active
+    def set_gene_state(self, *, gene=None, state_info=None):
+        assert gene is not None
+        assert state_info is not None
+        self.genes_by_name[gene.name] = state_info
 
     def is_active(self, gene_name):
-        return self.genes_by_name.get(gene_name, False)
+        state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
+        return state_info.active
 
     def __contains__(self, gene):
         return self.is_active(gene.name)
@@ -98,7 +100,7 @@ class State:
     """
     Hold the gene activity state for multiple tissues.
 
-    Holds multiple tissue, each with their own GeneActivity object.
+    Holds multiple tissue, each with their own GeneStates object.
 
     dict interface supports getting and setting gene activity (value) by
     tissue (key).
@@ -117,7 +119,7 @@ class State:
 
     def __setitem__(self, tissue, genes):
         assert tissue in self._tissues
-        assert isinstance(genes, GeneActivity)
+        assert isinstance(genes, GeneStates)
         self._tissues_by_name[tissue.name] = genes
 
     def __getitem__(self, tissue):
@@ -197,16 +199,17 @@ class Timecourse:
 
             for t in tissues:
                 seen = set()
-                next_active = GeneActivity()
+                next_active = GeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, activity in r.advance(timepoint=tp,
+                    for g, state_info in r.advance(timepoint=tp,
                                                  states=self.states_d,
                                                  tissue=t):
                         if g.name in seen and not r.multiple_allowed:
                             raise DinkumException(f"multiple rules containing {g.name}")
                         #print('zzz', t, g, activity)
-                        next_active.set_activity(gene=g, active=activity)
+                        next_active.set_gene_state(gene=g,
+                                                   state_info=state_info)
                         if not r.multiple_allowed:
                             seen.add(g.name)
 

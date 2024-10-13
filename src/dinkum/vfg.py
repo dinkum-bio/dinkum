@@ -9,6 +9,10 @@ X binds-and-upregulates Y if A else binds-and-represses
 """
 from functools import total_ordering
 import inspect
+import collections
+
+GeneStateInfo = collections.namedtuple('GeneStateInfo', ['level', 'active'])
+DEFAULT_OFF = GeneStateInfo(level=0, active=False)
 
 _rules = []
 _genes = []
@@ -78,7 +82,7 @@ class Interaction_IsPresent(Interactions):
                 if self.duration is None or \
                    timepoint < self.start + self.duration: # active!
                     if self.check_ligand(timepoint, states, tissue, delay=1):
-                        yield self.dest, 1
+                        yield self.dest, GeneStateInfo(level=100, active=True)
 
         # we have no opinion on activity outside our tissue!
 
@@ -106,9 +110,9 @@ class Interaction_Activates(Interactions):
                              states,
                              tissue,
                              self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_Or(Interactions):
@@ -137,9 +141,9 @@ class Interaction_Or(Interactions):
                                                     states,
                                                     tissue,
                                                     self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_AndNot(Interactions):
@@ -169,9 +173,9 @@ class Interaction_AndNot(Interactions):
                              states,
                              tissue,
                              self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_And(Interactions):
@@ -197,9 +201,9 @@ class Interaction_And(Interactions):
                                                     states,
                                                     tissue,
                                                     self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_ToggleRepressed(Interactions):
@@ -229,9 +233,9 @@ class Interaction_ToggleRepressed(Interactions):
                                                                    states,
                                                                    tissue,
                                                                    self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_Arbitrary(Interactions):
@@ -263,15 +267,16 @@ class Interaction_Arbitrary(Interactions):
 
         dep_state = [ states.is_active(timepoint, self.delay, g, tissue)
                       for g in dep_genes ]
-        is_active = self.state_fn(*dep_state)
 
+        is_active = self.state_fn(*dep_state)
+            
         if is_active and self.check_ligand(timepoint,
                                            states,
                                            tissue,
                                            self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Gene:
