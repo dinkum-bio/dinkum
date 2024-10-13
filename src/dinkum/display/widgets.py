@@ -34,7 +34,7 @@ class MultiTissuePanel:
             width, height = p.estimate_panel_size()
             max_height = max(height, max_height)
             total_width += width
-            x_offsets.append(width)
+            x_offsets.append(total_width)
 
         # build the appropriate canvas type
         if self.canvas_type == 'ipycanvas':
