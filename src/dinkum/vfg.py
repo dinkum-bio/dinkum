@@ -107,12 +107,9 @@ class Interaction_Activates(Interactions):
         assert tissue
         assert timepoint is not None
 
-        if states.is_active(timepoint, self.delay, self.src, tissue) and \
-           self.check_ligand(timepoint,
-                             states,
-                             tissue,
-                             self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
+        if states.is_active(timepoint, self.delay, self.src, tissue):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
@@ -139,11 +136,9 @@ class Interaction_Or(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if any(source_active) and self.check_ligand(timepoint,
-                                                    states,
-                                                    tissue,
-                                                    self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
+        if any(source_active):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
@@ -170,12 +165,9 @@ class Interaction_AndNot(Interactions):
         repressor_is_active = states.is_active(timepoint, self.delay,
                                               self.repressor, tissue)
 
-        if src_is_active and not repressor_is_active and \
-           self.check_ligand(timepoint,
-                             states,
-                             tissue,
-                             self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
+        if src_is_active and not repressor_is_active:
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
@@ -199,11 +191,9 @@ class Interaction_And(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if all(source_active) and self.check_ligand(timepoint,
-                                                    states,
-                                                    tissue,
-                                                    self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
+        if all(source_active):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
@@ -231,11 +221,10 @@ class Interaction_ToggleRepressed(Interactions):
                                            self.cofactor, tissue)
 
 
-        if tf_active and not cofactor_active and self.check_ligand(timepoint,
-                                                                   states,
-                                                                   tissue,
-                                                                   self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
+        # @CTB refigure for receptor/ligand, yah?
+        if tf_active and not cofactor_active:
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
@@ -250,6 +239,7 @@ class Interaction_Arbitrary(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
+        # @CTB refactor for presence/activity
         if not states:
             return
 
