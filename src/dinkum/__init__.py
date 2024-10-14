@@ -81,6 +81,11 @@ class GeneStates:
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
         return state_info.active
 
+    def get_level(self, gene_name):
+        state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
+        return state_info.level
+        
+
     def __contains__(self, gene):
         return self.is_active(gene.name)
 
