@@ -83,6 +83,8 @@ class Interaction_IsPresent(Interactions):
                    timepoint < self.start + self.duration: # active!
                     if self.check_ligand(timepoint, states, tissue, delay=1):
                         yield self.dest, GeneStateInfo(level=100, active=True)
+                    else:
+                        yield self.dest, GeneStateInfo(level=100, active=False)
 
         # we have no opinion on activity outside our tissue!
 

@@ -26,16 +26,11 @@ def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False):
 
         state_record.append((tp, state))
 
-    def is_active(tissue_name, time_point, gene):
+    # build a function (closure-ish) that returns the gene state.
+    def get_gene_state(tissue_name, time_point, gene):
         time_idx = time_points[time_point]
         ga = state_record[time_idx]
-        active = ga[1].get_by_tissue_name(tissue_name).is_active(gene)
-        return bool(active)
+        gs = ga[1].get_by_tissue_name(tissue_name).get_gene_state(gene)
+        return gs
 
-    def get_level(tissue_name, time_point, gene):
-        time_idx = time_points[time_point]
-        ga = state_record[time_idx]
-        level = ga[1].get_by_tissue_name(tissue_name).get_level(gene)
-        return level
-
-    return state_record, list(all_tissues), is_active
+    return state_record, list(all_tissues), get_gene_state
