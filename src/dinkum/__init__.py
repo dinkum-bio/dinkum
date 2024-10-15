@@ -72,6 +72,9 @@ class GeneStates:
     def __repr__(self):
         return repr(self.genes_by_name)
 
+    def __getitem__(self, gene_name):
+        return self.get_gene_state(gene_name)
+
     def set_gene_state(self, *, gene=None, state_info=None):
         assert gene is not None
         assert state_info is not None
@@ -104,9 +107,9 @@ class GeneStates:
         return rl
 
 
-class State:
+class TissueAndGeneStateAtTime:
     """
-    Hold the gene activity state for multiple tissues.
+    Hold the gene activity state for multiple tissues at a particular tp.
 
     Holds multiple tissue, each with their own GeneStates object.
 
@@ -146,8 +149,12 @@ class State:
             return True
         return False
 
+    def get_gene_state_info(self, gene, tissue):
+        ts = self[tissue]
+        return ts[gene.name]
 
-class States(collections.UserDict):
+
+class TissueGeneStates(collections.UserDict):
     """
     Contains (potentially incomplete) set of tissue/gene states for many
     timepoints.
@@ -168,6 +175,19 @@ class States(collections.UserDict):
             return True
         return False
 
+    def get_gene_state_info(self, current_tp, delay, gene, tissue):
+        from .vfg import Gene
+
+        assert int(current_tp)
+        assert int(delay)
+        assert isinstance(gene, Gene)
+
+        check_tp = current_tp - delay
+        time_state = self.get(check_tp)
+        if time_state:
+            return time_state.get_gene_state_info(gene, tissue)
+        return None
+
 
 class Timecourse:
     """
@@ -181,7 +201,7 @@ class Timecourse:
 
         self.start = start
         self.stop = stop
-        self.states_d = States()
+        self.states_d = TissueGeneStates()
 
     def __iter__(self):
         return iter(self.states_d.values())
@@ -203,7 +223,7 @@ class Timecourse:
         # advance one tick at a time
         this_state = {}
         for tp in range(start, stop + 1):
-            next_state = State(tissues=tissues, time=tp)
+            next_state = TissueAndGeneStateAtTime(tissues=tissues, time=tp)
 
             for t in tissues:
                 seen = set()

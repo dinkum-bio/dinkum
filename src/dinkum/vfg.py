@@ -239,7 +239,6 @@ class Interaction_Arbitrary(Interactions):
         self.delay = delay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
-        # @CTB refactor for presence/activity
         if not states:
             return
 
@@ -261,7 +260,7 @@ class Interaction_Arbitrary(Interactions):
                       for g in dep_genes ]
 
         is_active = self.state_fn(*dep_state)
-            
+
         if is_active and self.check_ligand(timepoint,
                                            states,
                                            tissue,
@@ -270,6 +269,54 @@ class Interaction_Arbitrary(Interactions):
         else:
             yield self.dest, GeneStateInfo(level=0, active=False)
 
+
+class Interaction_ArbitraryComplex(Interactions):
+    """
+    An interaction that supports arbitrary logic, + levels.
+    """
+    def __init__(self, *, dest=None, state_fn=None, delay=1):
+        assert dest
+        assert state_fn
+
+        self.dest = dest
+        self.state_fn = state_fn
+        self.delay = delay
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        # 'states' is class States...
+        # @CTB refactor for presence/activity
+        if not states:
+            return
+
+        assert tissue
+
+        # get the names of the genes on the function => and their activity
+        dep_gene_names = inspect.getfullargspec(self.state_fn).args
+        dep_genes = []
+        for name in dep_gene_names:
+            found = False
+            for g in _genes:
+                if g.name == name:
+                    dep_genes.append(g)
+                    found = True
+                    break
+            if not found:
+                raise Exception(f"no such gene: '{name}'")
+
+        # pass in their full GeneStateInfo
+        delay = self.delay
+        dep_state = [ states.get_gene_state_info(timepoint, delay, g, tissue)
+                      for g in dep_genes ]
+
+        is_active = self.state_fn(*dep_state)
+
+        if is_active and self.check_ligand(timepoint,
+                                           states,
+                                           tissue,
+                                           self.delay):
+            yield self.dest, GeneStateInfo(level=100, active=True)
+        else:
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 class Gene:
     def __init__(self, *, name=None):
@@ -340,6 +387,10 @@ class Gene:
 
     def custom_activation(self, *, state_fn=None, delay=1):
         ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
+        _add_rule(ix)
+
+    def custom_activation2(self, *, state_fn=None, delay=1):
+        ix = Interaction_ArbitraryComplex(dest=self, state_fn=state_fn, delay=delay)
         _add_rule(ix)
 
 
