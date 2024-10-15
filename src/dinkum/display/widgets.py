@@ -192,6 +192,7 @@ class TissueActivityPanel_Draw:
     "Use the timep/gene location to draw gene activity."
     active_color = "DeepSkyBlue"
     present_color = (255, 0, 0)
+    present_mask = (0, 255, 255)
     inactive_color = "DarkGrey"
     
     def __init__(self, template):
@@ -209,9 +210,12 @@ class TissueActivityPanel_Draw:
                 if gs.active:
                     color = self.active_color
                 elif gs.level > 0:
-                    base_color = self.present_color
-                    f = gs.level / 100 # MAX_LEVEL @CTB
-                    color = tuple([ int(i * f) for i in base_color ])
+                    f = gs.level / 1000 # MAX_LEVEL @CTB
+                    mask = self.present_mask
+                    mask = tuple([ int(i * f) for i in mask ])
+                    #print('YYY', mask)
+                    color = [ int(i+j) for (i, j) in zip(self.present_color, mask) ]
+                    color = tuple(color)
                 else:
                     color = self.inactive_color
 
