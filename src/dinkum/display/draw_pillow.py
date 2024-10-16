@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw
 class PillowDrawer:
     def __init__(self, *, width=None, height=None, **kwargs):
         self.im = Image.new('RGB', (width, height), 'white')
-        self.imdraw = ImageDraw.Draw(self.im)
+        self.imdraw = ImageDraw.Draw(self.im, 'RGBA')
         self.save_image = kwargs.get('save_image')
 
     def polygon(self, coords, fill):
@@ -24,5 +24,4 @@ class PillowDrawer:
         return self.im
 
     def save(self):
-        print('YYY saving')
         self.im.save(self.save_image)

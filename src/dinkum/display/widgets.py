@@ -19,7 +19,7 @@ class MultiTissuePanel:
         self.save_image = save_image
         self.canvas_type = canvas_type
 
-    def draw(self, is_active_fn):
+    def draw(self, gene_state_fn, level=100):
         """
         Draw the basic background canvas, upon which gene activation info
         will be displayed.
@@ -56,7 +56,7 @@ class MultiTissuePanel:
             # draw time point/tissue/state
             gene_names = p.gene_names
             times = p.times
-            d.draw(canvas, times, gene_names, is_active_fn)
+            d.draw(canvas, times, gene_names, gene_state_fn)
 
         if self.save_image:
             canvas.save()
@@ -191,20 +191,31 @@ class TissueActivityPanel:
 class TissueActivityPanel_Draw:
     "Use the timep/gene location to draw gene activity."
     active_color = "DeepSkyBlue"
+    present_color = (255, 0, 0)
+    present_mask = (0, 255, 255)
     inactive_color = "DarkGrey"
     
     def __init__(self, template):
         self.template = template
 
-    def draw(self, canvas, times, gene_names, is_active_fn):
+    def draw(self, canvas, times, gene_names, get_gene_state):
         locations_by_tg = self.template.locations_by_tg
         tissue_name = self.template.tissue_name
 
         for tp in times:
             for gene in gene_names:
                 color = None
-                if is_active_fn(tissue_name, tp, gene):
+
+                gs = get_gene_state(tissue_name, tp, gene)
+                if gs.active:
                     color = self.active_color
+                elif gs.level > 0:
+                    f = gs.level / 1000 # MAX_LEVEL @CTB
+                    mask = self.present_mask
+                    mask = tuple([ int(i * f) for i in mask ])
+                    #print('YYY', mask)
+                    color = [ int(i+j) for (i, j) in zip(self.present_color, mask) ]
+                    color = tuple(color)
                 else:
                     color = self.inactive_color
 

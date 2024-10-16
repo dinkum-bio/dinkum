@@ -1,14 +1,16 @@
 import sys
 from importlib.metadata import version
+import pandas as pd
 
 __version__ = version("dinkum-bio")
 
-from . import vfg
-from . import vfn
-from . import observations
-
 import itertools
 import collections
+
+from . import vfg
+from .vfg import GeneStateInfo, DEFAULT_OFF
+from . import vfn
+from . import observations
 
 class DinkumException(Exception):
     pass
@@ -25,8 +27,8 @@ def reset(*, verbose=True):
         print(f"initializing: dinkum v{__version__}")
 
 
-def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
-                    verbose=False, save_image=None):
+def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
+                       verbose=False, save_image=None):
     """
     Run and display the circuit model.
 
@@ -48,7 +50,7 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
         tissue_names = vfn.get_tissue_names()
 
     try:
-        states, tissues, is_active_fn = \
+        states, tissues, get_state_fn = \
             tc_record_activity(start=start,
                                stop=stop,
                                gene_names=gene_names,
@@ -58,26 +60,46 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
         print("Halting execution.", file=sys.stderr)
         return
 
+    level_df, active_df = convert_states_to_dataframe(states, gene_names,
+                                                      get_state_fn)
+
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
                           genes_by_name=gene_names,
                           save_image=save_image)
-    return mp.draw(is_active_fn)
+    return mp.draw(get_state_fn), level_df, active_df
 
 
-class GeneActivity:
+def run_and_display(*args, **kwargs):
+    display_obj, _level_df, _active_df = run_and_display_df(*args, **kwargs)
+    return display_obj
+
+
+class GeneStates:
     def __init__(self):
         self.genes_by_name = {}
 
     def __repr__(self):
         return repr(self.genes_by_name)
 
-    def set_activity(self, *, gene=None, active=None):
-        assert gene
-        assert active is not None
-        self.genes_by_name[gene.name] = active
+    def __getitem__(self, gene_name):
+        return self.get_gene_state(gene_name)
+
+    def set_gene_state(self, *, gene=None, state_info=None):
+        assert gene is not None
+        assert state_info is not None
+        self.genes_by_name[gene.name] = state_info
 
     def is_active(self, gene_name):
-        return self.genes_by_name.get(gene_name, False)
+        state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
+        return state_info.active
+
+    def get_level(self, gene_name):
+        state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
+        return state_info.level
+
+    def get_gene_state(self, gene_name):
+        state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
+        return state_info
 
     def __contains__(self, gene):
         return self.is_active(gene.name)
@@ -94,11 +116,11 @@ class GeneActivity:
         return rl
 
 
-class State:
+class TissueAndGeneStateAtTime:
     """
-    Hold the gene activity state for multiple tissues.
+    Hold the gene activity state for multiple tissues at a particular tp.
 
-    Holds multiple tissue, each with their own GeneActivity object.
+    Holds multiple tissue, each with their own GeneStates object.
 
     dict interface supports getting and setting gene activity (value) by
     tissue (key).
@@ -116,11 +138,13 @@ class State:
         self.time = time
 
     def __setitem__(self, tissue, genes):
+        "set Tissue object by name."
         assert tissue in self._tissues
-        assert isinstance(genes, GeneActivity)
+        assert isinstance(genes, GeneStates)
         self._tissues_by_name[tissue.name] = genes
 
     def __getitem__(self, tissue):
+        "get Tissue object."
         return self._tissues_by_name[tissue.name]
 
     def get_by_tissue_name(self, tissue_name):
@@ -136,8 +160,12 @@ class State:
             return True
         return False
 
+    def get_gene_state_info(self, gene, tissue):
+        ts = self[tissue]
+        return ts[gene.name]
 
-class States(collections.UserDict):
+
+class TissueGeneStates(collections.UserDict):
     """
     Contains (potentially incomplete) set of tissue/gene states for many
     timepoints.
@@ -158,6 +186,19 @@ class States(collections.UserDict):
             return True
         return False
 
+    def get_gene_state_info(self, current_tp, delay, gene, tissue):
+        from .vfg import Gene
+
+        assert int(current_tp)
+        assert int(delay)
+        assert isinstance(gene, Gene)
+
+        check_tp = current_tp - delay
+        time_state = self.get(check_tp)
+        if time_state:
+            return time_state.get_gene_state_info(gene, tissue)
+        return None
+
 
 class Timecourse:
     """
@@ -171,7 +212,7 @@ class Timecourse:
 
         self.start = start
         self.stop = stop
-        self.states_d = States()
+        self.states_d = TissueGeneStates()
 
     def __iter__(self):
         return iter(self.states_d.values())
@@ -193,20 +234,21 @@ class Timecourse:
         # advance one tick at a time
         this_state = {}
         for tp in range(start, stop + 1):
-            next_state = State(tissues=tissues, time=tp)
+            next_state = TissueAndGeneStateAtTime(tissues=tissues, time=tp)
 
             for t in tissues:
                 seen = set()
-                next_active = GeneActivity()
+                next_active = GeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, activity in r.advance(timepoint=tp,
+                    for g, state_info in r.advance(timepoint=tp,
                                                  states=self.states_d,
                                                  tissue=t):
                         if g.name in seen and not r.multiple_allowed:
                             raise DinkumException(f"multiple rules containing {g.name}")
                         #print('zzz', t, g, activity)
-                        next_active.set_activity(gene=g, active=activity)
+                        next_active.set_gene_state(gene=g,
+                                                   state_info=state_info)
                         if not r.multiple_allowed:
                             seen.add(g.name)
 
@@ -239,3 +281,28 @@ def run(start, stop, *, verbose=False):
             raise DinkumObservationFailed(state.time)
 
     return tc
+
+
+def convert_states_to_dataframe(states, gene_names, get_state_fn):
+    level_rows = []
+    active_rows = []
+
+    for tp, tissue_and_gene_sat in states:
+        assert tp.startswith('t=')
+        timepoint = int(tp.split('=')[1]) # convert tp str to int
+
+        # for each tissue, get level of each gene
+        for tissue in tissue_and_gene_sat.tissues:
+            level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
+            active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
+            for gene_name in gene_names:
+                gsa = get_state_fn(tissue.name, tp, gene_name)
+                level_d[gene_name] = gsa.level
+                active_d[gene_name] = gsa.active
+            level_rows.append(level_d)
+            active_rows.append(active_d)
+
+    level_df = pd.DataFrame.from_dict(level_rows)
+    active_df = pd.DataFrame.from_dict(active_rows)
+
+    return level_df, active_df

@@ -9,6 +9,10 @@ X binds-and-upregulates Y if A else binds-and-represses
 """
 from functools import total_ordering
 import inspect
+import collections
+
+GeneStateInfo = collections.namedtuple('GeneStateInfo', ['level', 'active'])
+DEFAULT_OFF = GeneStateInfo(level=0, active=False)
 
 _rules = []
 _genes = []
@@ -62,14 +66,21 @@ class Interactions:
 class Interaction_IsPresent(Interactions):
     multiple_allowed = True
 
-    def __init__(self, *, dest=None, start=None, duration=None, tissue=None):
+    def __init__(self, *, dest=None, start=None, duration=None, tissue=None,
+                 level=None, decay=None):
         assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
         assert start is not None, "must provide start time"
+        assert level is not None, "must provide level"
+        assert decay is not None, "must provide decay"
+        assert decay >= 1
+        assert decay < 1e6
         assert tissue
         self.dest = dest
         self.tissue = tissue
         self.start = start
         self.duration = duration
+        self.level = level
+        self.decay = decay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # ignore states
@@ -78,9 +89,15 @@ class Interaction_IsPresent(Interactions):
                 if self.duration is None or \
                    timepoint < self.start + self.duration: # active!
                     if self.check_ligand(timepoint, states, tissue, delay=1):
-                        yield self.dest, 1
-
+                        yield self.dest, GeneStateInfo(level=self.level,
+                                                       active=True)
+                    else:
+                        yield self.dest, GeneStateInfo(level=self.level,
+                                                       active=False)
         # we have no opinion on activity outside our tissue!
+
+        #print('XXX', self.level, timepoint)
+        self.level = round(self.level / self.decay + 0.5)
 
 
 class Interaction_Activates(Interactions):
@@ -101,14 +118,11 @@ class Interaction_Activates(Interactions):
         assert tissue
         assert timepoint is not None
 
-        if states.is_active(timepoint, self.delay, self.src, tissue) and \
-           self.check_ligand(timepoint,
-                             states,
-                             tissue,
-                             self.delay):
-            yield self.dest, 1
+        if states.is_active(timepoint, self.delay, self.src, tissue):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_Or(Interactions):
@@ -133,13 +147,11 @@ class Interaction_Or(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if any(source_active) and self.check_ligand(timepoint,
-                                                    states,
-                                                    tissue,
-                                                    self.delay):
-            yield self.dest, 1
+        if any(source_active):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_AndNot(Interactions):
@@ -164,14 +176,11 @@ class Interaction_AndNot(Interactions):
         repressor_is_active = states.is_active(timepoint, self.delay,
                                               self.repressor, tissue)
 
-        if src_is_active and not repressor_is_active and \
-           self.check_ligand(timepoint,
-                             states,
-                             tissue,
-                             self.delay):
-            yield self.dest, 1
+        if src_is_active and not repressor_is_active:
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_And(Interactions):
@@ -193,13 +202,11 @@ class Interaction_And(Interactions):
         source_active = [ states.is_active(timepoint, self.delay, g, tissue)
                           for g in self.sources ]
 
-        if all(source_active) and self.check_ligand(timepoint,
-                                                    states,
-                                                    tissue,
-                                                    self.delay):
-            yield self.dest, 1
+        if all(source_active):
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_ToggleRepressed(Interactions):
@@ -225,13 +232,12 @@ class Interaction_ToggleRepressed(Interactions):
                                            self.cofactor, tissue)
 
 
-        if tf_active and not cofactor_active and self.check_ligand(timepoint,
-                                                                   states,
-                                                                   tissue,
-                                                                   self.delay):
-            yield self.dest, 1
+        # @CTB refigure for receptor/ligand, yah?
+        if tf_active and not cofactor_active:
+            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
+            yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
 
 
 class Interaction_Arbitrary(Interactions):
@@ -263,15 +269,65 @@ class Interaction_Arbitrary(Interactions):
 
         dep_state = [ states.is_active(timepoint, self.delay, g, tissue)
                       for g in dep_genes ]
+
         is_active = self.state_fn(*dep_state)
 
         if is_active and self.check_ligand(timepoint,
                                            states,
                                            tissue,
                                            self.delay):
-            yield self.dest, 1
+            yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, 0
+            yield self.dest, GeneStateInfo(level=0, active=False)
+
+
+class Interaction_ArbitraryComplex(Interactions):
+    """
+    An interaction that supports arbitrary logic, + levels.
+    """
+    def __init__(self, *, dest=None, state_fn=None, delay=1):
+        assert dest
+        assert state_fn
+
+        self.dest = dest
+        self.state_fn = state_fn
+        self.delay = delay
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        # 'states' is class States...
+        # @CTB refactor for presence/activity
+        if not states:
+            return
+
+        assert tissue
+
+        # get the names of the genes on the function => and their activity
+        dep_gene_names = inspect.getfullargspec(self.state_fn).args
+        dep_genes = []
+        for name in dep_gene_names:
+            found = False
+            for g in _genes:
+                if g.name == name:
+                    dep_genes.append(g)
+                    found = True
+                    break
+            if not found:
+                raise Exception(f"no such gene: '{name}'")
+
+        # pass in their full GeneStateInfo
+        delay = self.delay
+        dep_state = [ states.get_gene_state_info(timepoint, delay, g, tissue)
+                      for g in dep_genes ]
+
+        level, is_active = self.state_fn(*dep_state)
+
+        if is_active:
+            is_active = self.check_ligand(timepoint,
+                                          states,
+                                          tissue,
+                                          self.delay)
+
+        yield self.dest, GeneStateInfo(level, is_active)
 
 
 class Gene:
@@ -334,15 +390,20 @@ class Gene:
                                          dest=self, delay=delay)
         _add_rule(ix)
 
-    def is_present(self, *, where=None, start=None, duration=None):
+    def is_present(self, *, where=None, start=None, duration=None, level=100,
+                   decay=1):
         assert where
         assert start
         ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
-                                   tissue=where)
+                                   tissue=where, level=level, decay=decay)
         _add_rule(ix)
 
     def custom_activation(self, *, state_fn=None, delay=1):
         ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
+        _add_rule(ix)
+
+    def custom_activation2(self, *, state_fn=None, delay=1):
+        ix = Interaction_ArbitraryComplex(dest=self, state_fn=state_fn, delay=delay)
         _add_rule(ix)
 
 
