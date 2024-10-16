@@ -1,5 +1,6 @@
 import sys
 from importlib.metadata import version
+import pandas as pd
 
 __version__ = version("dinkum-bio")
 
@@ -26,8 +27,8 @@ def reset(*, verbose=True):
         print(f"initializing: dinkum v{__version__}")
 
 
-def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
-                    verbose=False, save_image=None):
+def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
+                       verbose=False, save_image=None):
     """
     Run and display the circuit model.
 
@@ -49,7 +50,7 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
         tissue_names = vfn.get_tissue_names()
 
     try:
-        states, tissues, is_active_fn = \
+        states, tissues, get_state_fn = \
             tc_record_activity(start=start,
                                stop=stop,
                                gene_names=gene_names,
@@ -59,10 +60,18 @@ def run_and_display(*, start=1, stop=10, gene_names=None, tissue_names=None,
         print("Halting execution.", file=sys.stderr)
         return
 
+    level_df, active_df = convert_states_to_dataframe(states, gene_names,
+                                                      get_state_fn)
+
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
                           genes_by_name=gene_names,
                           save_image=save_image)
-    return mp.draw(is_active_fn)
+    return mp.draw(get_state_fn), level_df, active_df
+
+
+def run_and_display(*args, **kwargs):
+    display_obj, _level_df, _active_df = run_and_display_df(*args, **kwargs)
+    return display_obj
 
 
 class GeneStates:
@@ -129,11 +138,13 @@ class TissueAndGeneStateAtTime:
         self.time = time
 
     def __setitem__(self, tissue, genes):
+        "set Tissue object by name."
         assert tissue in self._tissues
         assert isinstance(genes, GeneStates)
         self._tissues_by_name[tissue.name] = genes
 
     def __getitem__(self, tissue):
+        "get Tissue object."
         return self._tissues_by_name[tissue.name]
 
     def get_by_tissue_name(self, tissue_name):
@@ -270,3 +281,28 @@ def run(start, stop, *, verbose=False):
             raise DinkumObservationFailed(state.time)
 
     return tc
+
+
+def convert_states_to_dataframe(states, gene_names, get_state_fn):
+    level_rows = []
+    active_rows = []
+
+    for tp, tissue_and_gene_sat in states:
+        assert tp.startswith('t=')
+        timepoint = int(tp.split('=')[1]) # convert tp str to int
+
+        # for each tissue, get level of each gene
+        for tissue in tissue_and_gene_sat.tissues:
+            level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
+            active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
+            for gene_name in gene_names:
+                gsa = get_state_fn(tissue.name, tp, gene_name)
+                level_d[gene_name] = gsa.level
+                active_d[gene_name] = gsa.active
+            level_rows.append(level_d)
+            active_rows.append(active_d)
+
+    level_df = pd.DataFrame.from_dict(level_rows)
+    active_df = pd.DataFrame.from_dict(active_rows)
+
+    return level_df, active_df

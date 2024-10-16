@@ -66,14 +66,21 @@ class Interactions:
 class Interaction_IsPresent(Interactions):
     multiple_allowed = True
 
-    def __init__(self, *, dest=None, start=None, duration=None, tissue=None):
+    def __init__(self, *, dest=None, start=None, duration=None, tissue=None,
+                 level=None, decay=None):
         assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
         assert start is not None, "must provide start time"
+        assert level is not None, "must provide level"
+        assert decay is not None, "must provide decay"
+        assert decay >= 1
+        assert decay < 1e6
         assert tissue
         self.dest = dest
         self.tissue = tissue
         self.start = start
         self.duration = duration
+        self.level = level
+        self.decay = decay
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # ignore states
@@ -82,11 +89,15 @@ class Interaction_IsPresent(Interactions):
                 if self.duration is None or \
                    timepoint < self.start + self.duration: # active!
                     if self.check_ligand(timepoint, states, tissue, delay=1):
-                        yield self.dest, GeneStateInfo(level=100, active=True)
+                        yield self.dest, GeneStateInfo(level=self.level,
+                                                       active=True)
                     else:
-                        yield self.dest, GeneStateInfo(level=100, active=False)
-
+                        yield self.dest, GeneStateInfo(level=self.level,
+                                                       active=False)
         # we have no opinion on activity outside our tissue!
+
+        #print('XXX', self.level, timepoint)
+        self.level = round(self.level / self.decay + 0.5)
 
 
 class Interaction_Activates(Interactions):
@@ -379,11 +390,12 @@ class Gene:
                                          dest=self, delay=delay)
         _add_rule(ix)
 
-    def is_present(self, *, where=None, start=None, duration=None):
+    def is_present(self, *, where=None, start=None, duration=None, level=100,
+                   decay=1):
         assert where
         assert start
         ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
-                                   tissue=where)
+                                   tissue=where, level=level, decay=decay)
         _add_rule(ix)
 
     def custom_activation(self, *, state_fn=None, delay=1):

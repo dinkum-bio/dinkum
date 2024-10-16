@@ -20,6 +20,7 @@ def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False):
 
         for ti in state.tissues:
             all_tissues.add(ti.name)
+            #print('YYY', state)
             present = state[ti]
             if verbose:
                 print(f"\ttissue={ti.name}, {present.report_activity()}")

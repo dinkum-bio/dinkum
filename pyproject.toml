@@ -8,7 +8,7 @@ classifiers = [
 "Programming Language :: Python :: Implementation :: CPython",
 "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
     ]
-dependencies = ["ipycanvas==0.13.1", "Pillow==10.1.0"]
+dependencies = ["ipycanvas==0.13.1", "Pillow==10.1.0", "pandas>=2<3"]
 
 authors = [
   { name="C. Titus Brown" },
