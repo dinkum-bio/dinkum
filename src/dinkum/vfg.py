@@ -308,15 +308,16 @@ class Interaction_ArbitraryComplex(Interactions):
         dep_state = [ states.get_gene_state_info(timepoint, delay, g, tissue)
                       for g in dep_genes ]
 
-        is_active = self.state_fn(*dep_state)
+        level, is_active = self.state_fn(*dep_state)
 
-        if is_active and self.check_ligand(timepoint,
-                                           states,
-                                           tissue,
-                                           self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
-        else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+        if is_active:
+            is_active = self.check_ligand(timepoint,
+                                          states,
+                                          tissue,
+                                          self.delay)
+
+        yield self.dest, GeneStateInfo(level, is_active)
+
 
 class Gene:
     def __init__(self, *, name=None):
