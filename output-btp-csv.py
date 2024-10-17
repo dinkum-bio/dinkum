@@ -104,7 +104,7 @@ for ix in vfg._rules:
     model_name = base_name
     source_type = 'gene'
     source_region = 'a0'
-    target_region = 'a1'
+    target_region = 'a0'
     for (target, source, sign) in ix.btp_links():
         source_name = source.name
         target_name = target.name
