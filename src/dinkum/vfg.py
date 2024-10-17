@@ -50,7 +50,10 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 class Interactions:
     multiple_allowed = False
 
-    def btp_links(self):
+    def btp_autonomus_links(self):
+        raise Unimplemented
+
+    def btp_signal_links(self):
         raise Unimplemented
 
     def check_ligand(self, timepoint, states, tissue, delay):
@@ -85,7 +88,10 @@ class Interaction_IsPresent(Interactions):
         self.level = level
         self.decay = decay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
+        return []
+
+    def btp_signal_links(self):
         return []
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
@@ -114,8 +120,11 @@ class Interaction_Activates(Interactions):
         self.dest = dest
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
         return [self.dest, self.src, "positive"]
+
+    def btp_signal_links(self):
+        return []
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
@@ -143,9 +152,12 @@ class Interaction_Or(Interactions):
         self.dest = dest
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
         for src in self.sources:
             return [self.dest, self.src, "positive"]
+
+    def btp_signal_links(self):
+        return []
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
@@ -174,10 +186,13 @@ class Interaction_AndNot(Interactions):
         self.dest = dest
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
         yield [self.dest, self.src, "positive"]
         yield [self.dest, self.repressor, "negative"]
                    
+    def btp_signal_links(self):
+        return []
+
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
         The gene is active if its activator was active 'delay' ticks ago,
@@ -206,10 +221,13 @@ class Interaction_And(Interactions):
         self.dest = dest
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
         for src in self.sources:
             yield [self.dest, src, "positive"]
                    
+    def btp_signal_links(self):
+        return []
+
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
         The gene is active if all of its sources were active 'delay' ticks
@@ -237,7 +255,10 @@ class Interaction_ToggleRepressed(Interactions):
         self.dest = dest
         self.delay = delay
 
-    def btp_links(self):
+    def btp_signal_links(self):
+        return []
+
+    def btp_autonomous_links(self):
         yield [self.dest, self.tf, "positive"]
         yield [self.dest, self.cofactor, "positive"] # @CTB toggle
                    
@@ -274,7 +295,10 @@ class Interaction_Arbitrary(Interactions):
         self.state_fn = state_fn
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
+        return []
+
+    def btp_signal_links(self):
         return []
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
@@ -321,7 +345,10 @@ class Interaction_ArbitraryComplex(Interactions):
         self.state_fn = state_fn
         self.delay = delay
 
-    def btp_links(self):
+    def btp_autonomous_links(self):
+        return []
+
+    def btp_signal_links(self):
         return []
 
     def advance(self, *, timepoint=None, states=None, tissue=None):
