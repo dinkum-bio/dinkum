@@ -121,7 +121,7 @@ class Interaction_Activates(Interactions):
         self.delay = delay
 
     def btp_autonomous_links(self):
-        return [self.dest, self.src, "positive"]
+        yield self.dest, self.src, "positive"
 
     def btp_signal_links(self):
         return []
