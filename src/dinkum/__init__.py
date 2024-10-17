@@ -1,3 +1,6 @@
+"""
+Top-level dinkum module
+"""
 import sys
 from importlib.metadata import version
 import pandas as pd
@@ -11,6 +14,7 @@ from . import vfg
 from .vfg import GeneStateInfo, DEFAULT_OFF
 from . import vfn
 from . import observations
+from . import utils
 
 class DinkumException(Exception):
     pass
