@@ -95,6 +95,9 @@ w.writerow(fill_ten(['# Region Commands']))
 w.writerow(fill_ten(['# Command Type', 'Model Name', 'Region Name', 'Region Abbreviation']))
 
 for n, tissue in enumerate(vfn._tissues):
+    w.writerow(fill_ten(["region", base_name, f"a{n}", f"a{n}"]))
+
+for n, tissue in enumerate(vfn._tissues):
     w.writerow(fill_ten(["region", tissue.name, f"a{n}", f"a{n}"]))
 
 w.writerow(fill_ten(['# Standard Interactions']))
