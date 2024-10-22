@@ -55,6 +55,11 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     return ligands
 
 
+class CustomActivation(object):
+    def __init__(self, *, input_genes=None):
+        self.input_genes = list(input_genes)
+
+
 class Interactions:
     multiple_allowed = False
 
@@ -359,17 +364,15 @@ class Interaction_ArbitraryComplex(Interactions):
     def btp_signal_links(self):
         return []
 
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        # 'states' is class States...
-        # @CTB refactor for presence/activity
-        if not states:
-            return
-
-        assert tissue
-
+    def _get_genes_for_activation_fn(self, state_fn):
         # get the names of the genes on the function => and their activity
-        dep_gene_names = inspect.getfullargspec(self.state_fn).args
+        if isinstance(state_fn, CustomActivation):
+            dep_gene_names = state_fn.input_genes
+        else:
+            dep_gene_names = inspect.getfullargspec(state_fn).args
+
         dep_genes = []
+        print('YYY', dep_gene_names)
         for name in dep_gene_names:
             found = False
             for g in _genes:
@@ -378,16 +381,31 @@ class Interaction_ArbitraryComplex(Interactions):
                     found = True
                     break
             if not found:
-                raise Exception(f"no such gene: '{name}'")
+                raise DinkumInvalidGene(f"no such gene: '{name}'")
+
+        return dep_genes
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        # 'states' is class States...
+        if not states:
+            return
+
+        assert tissue
+        dep_genes = self._get_genes_for_activation_fn(self.state_fn)
 
         # pass in their full GeneStateInfo
         delay = self.delay
         dep_state = [ states.get_gene_state_info(timepoint, delay, g, tissue)
                       for g in dep_genes ]
 
-        level, is_active = self.state_fn(*dep_state)
+        result = self.state_fn(*dep_state)
+        if result is None:
+            level, is_active = DEFAULT_OFF
+        else:
+            level, is_active = result
 
         if is_active:
+            # @CTB ...check ligand should be made more general...
             is_active = self.check_ligand(timepoint,
                                           states,
                                           tissue,
