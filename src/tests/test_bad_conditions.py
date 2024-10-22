@@ -25,3 +25,18 @@ def test_delete_gene():
 
     with pytest.raises(DinkumInvalidGene):
         y.activated_by(source=x)
+
+
+def test_delete_tissue():
+    # check that 'reset' clears the tissue
+    dinkum.reset()
+
+    m = Tissue(name='M')
+
+    dinkum.reset()
+
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    with pytest.raises(DinkumInvalidTissue):
+        x.is_present(where=m, start=1)

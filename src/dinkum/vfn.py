@@ -5,6 +5,7 @@ X is-present in celltype/tissue/compartment M at time T
 from functools import total_ordering
 
 from . import vfg
+from .exceptions import *
 
 _tissues = []
 def _add_tissue(t):
@@ -21,6 +22,9 @@ def reset():
     global _tissues
     _tissues = []
 
+def check_is_valid_tissue(t):
+    if not t in _tissues:
+        raise DinkumInvalidTissue(f"{t.name} is an invalid tissue")
 
 @total_ordering
 class Tissue:

@@ -3,3 +3,6 @@ class DinkumException(Exception):
 
 class DinkumInvalidGene(Exception):
     pass
+
+class DinkumInvalidTissue(Exception):
+    pass

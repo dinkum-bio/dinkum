@@ -12,6 +12,7 @@ import inspect
 import collections
 
 from .exceptions import *
+from .vfn import check_is_valid_tissue
 
 GeneStateInfo = collections.namedtuple('GeneStateInfo', ['level', 'active'])
 DEFAULT_OFF = GeneStateInfo(level=0, active=False)
@@ -462,6 +463,7 @@ class Gene:
         assert where
         assert start
         check_is_valid_gene(self)
+        check_is_valid_tissue(where)
         ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
                                    tissue=where, level=level, decay=decay)
         _add_rule(ix)
