@@ -153,7 +153,7 @@ class Interaction_Activates(Interactions):
             is_active = self.check_ligand(timepoint, states, tissue, self.delay)
             yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_Or(Interactions):
@@ -189,7 +189,7 @@ class Interaction_Or(Interactions):
             is_active = self.check_ligand(timepoint, states, tissue, self.delay)
             yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_AndNot(Interactions):
@@ -225,7 +225,7 @@ class Interaction_AndNot(Interactions):
             is_active = self.check_ligand(timepoint, states, tissue, self.delay)
             yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_And(Interactions):
@@ -258,7 +258,7 @@ class Interaction_And(Interactions):
             is_active = self.check_ligand(timepoint, states, tissue, self.delay)
             yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_ToggleRepressed(Interactions):
@@ -296,7 +296,7 @@ class Interaction_ToggleRepressed(Interactions):
             is_active = self.check_ligand(timepoint, states, tissue, self.delay)
             yield self.dest, GeneStateInfo(level=100, active=is_active)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_Arbitrary(Interactions):
@@ -343,7 +343,7 @@ class Interaction_Arbitrary(Interactions):
                                            self.delay):
             yield self.dest, GeneStateInfo(level=100, active=True)
         else:
-            yield self.dest, GeneStateInfo(level=0, active=False)
+            yield self.dest, DEFAULT_OFF
 
 
 class Interaction_ArbitraryComplex(Interactions):
