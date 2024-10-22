@@ -11,6 +11,8 @@ from functools import total_ordering
 import inspect
 import collections
 
+from .exceptions import *
+
 GeneStateInfo = collections.namedtuple('GeneStateInfo', ['level', 'active'])
 DEFAULT_OFF = GeneStateInfo(level=0, active=False)
 
@@ -31,6 +33,11 @@ def reset():
     global _genes
     _rules = []
     _genes = []
+
+
+def check_is_valid_gene(g):
+    if not g in _genes:
+        raise DinkumInvalidGene(f"{g.name} is invalid")
 
 
 def _retrieve_ligands(timepoint, states, tissue, delay):
@@ -427,6 +434,8 @@ class Gene:
             return self.present()
 
     def activated_by(self, *, source=None, delay=1):
+        check_is_valid_gene(self)
+        check_is_valid_gene(source)
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
@@ -452,6 +461,7 @@ class Gene:
                    decay=1):
         assert where
         assert start
+        check_is_valid_gene(self)
         ix = Interaction_IsPresent(dest=self, start=start, duration=duration,
                                    tissue=where, level=level, decay=decay)
         _add_rule(ix)

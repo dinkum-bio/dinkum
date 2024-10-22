@@ -4,6 +4,8 @@ X is-present in celltype/tissue/compartment M at time T
 """
 from functools import total_ordering
 
+from . import vfg
+
 _tissues = []
 def _add_tissue(t):
     global _tissues
@@ -46,6 +48,7 @@ class Tissue:
 
     def add_gene(self, *, gene=None, start=None, duration=None):
         assert gene
+        assert gene in vfg._genes
         assert start is not None
         gene.is_present(start=start, duration=duration, where=self)
 
