@@ -1,8 +1,18 @@
 class DinkumException(Exception):
     pass
 
-class DinkumInvalidGene(Exception):
+class DinkumObservationFailed(DinkumException):
     pass
 
-class DinkumInvalidTissue(Exception):
+class DinkumInvalidGene(DinkumException):
     pass
+
+class DinkumInvalidTissue(DinkumException):
+    pass
+
+class DinkumNoSuchGene(DinkumException):
+    pass
+
+class DinkumInvalidActivationFunction(DinkumException):
+    pass
+

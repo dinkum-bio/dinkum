@@ -289,51 +289,6 @@ class Interaction_ToggleRepressed(Interactions):
 
 
 class Interaction_Arbitrary(Interactions):
-    def __init__(self, *, dest=None, state_fn=None, delay=1):
-        assert dest
-        assert state_fn
-
-        self.dest = dest
-        self.state_fn = state_fn
-        self.delay = delay
-
-    def btp_autonomous_links(self):
-        return []
-
-    def btp_signal_links(self):
-        return []
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        if not states:
-            return
-
-        assert tissue
-
-        dep_gene_names = inspect.getfullargspec(self.state_fn).args
-        dep_genes = []
-        for name in dep_gene_names:
-            found = False
-            for g in _genes:
-                if g.name == name:
-                    dep_genes.append(g)
-                    found = True
-                    break
-            if not found:
-                raise Exception(f"no such gene: '{name}'")
-
-        dep_state = [ states.is_active(timepoint, self.delay, g, tissue)
-                      for g in dep_genes ]
-
-        is_active = self.state_fn(*dep_state)
-
-        if is_active and self.check_ligand(timepoint,
-                                           states,
-                                           tissue,
-                                           self.delay):
-            yield self.dest, GeneStateInfo(level=100, active=True)
-
-
-class Interaction_ArbitraryComplex(Interactions):
     """
     An interaction that supports arbitrary logic, + levels.
     """
@@ -356,7 +311,13 @@ class Interaction_ArbitraryComplex(Interactions):
         if isinstance(state_fn, CustomActivation):
             dep_gene_names = state_fn.input_genes
         else:
-            dep_gene_names = inspect.getfullargspec(state_fn).kwonlyargs
+            # only support explicit kwargs, because otherwise we are a bit
+            # fragile with respect to order of arguments.
+            argspec = inspect.getfullargspec(state_fn)
+            if argspec.args or argspec.varargs or argspec.varkw or \
+               argspec.kwonlydefaults:
+                raise DinkumInvalidActivationFunction("must supply kwargs only")
+            dep_gene_names = argspec.kwonlyargs
 
         dep_genes = []
         for name in dep_gene_names:
@@ -367,7 +328,7 @@ class Interaction_ArbitraryComplex(Interactions):
                     found = True
                     break
             if not found:
-                raise DinkumInvalidGene(f"no such gene: '{name}'")
+                raise DinkumInvalidGene(name)
 
         return dep_genes
 
