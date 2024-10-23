@@ -1,11 +1,4 @@
 """encode view-from-genome rules.
-
-X binds-and-upregulates Y
-X binds-and-represses Y
-X directly-or-indirectly-upregulates Y
-X directly-or-indirectly-represses Y
-
-X binds-and-upregulates Y if A else binds-and-represses
 """
 from functools import total_ordering
 import inspect
@@ -57,6 +50,18 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
 
 class CustomActivation(object):
     def __init__(self, *, input_genes=None):
+        # only support explicit kwargs on __call__,
+        # because otherwise we are a bit
+        # fragile with respect to order of arguments.
+        argspec = inspect.getfullargspec(self.__call__)
+        argspec.args.remove('self')
+        if argspec.args or argspec.varargs or argspec.varkw or \
+           argspec.kwonlydefaults:
+            raise DinkumInvalidActivationFunction("on __call__, must supply _only_ kwargs with no defaults")
+
+        if input_genes is None: # retrieve from __call__
+            input_genes = argspec.kwonlyargs
+
         self.input_genes = list(input_genes)
 
 
@@ -312,6 +317,10 @@ class Interaction_Arbitrary(Interactions):
         # get the names of the genes on the function
         if isinstance(state_fn, CustomActivation):
             dep_gene_names = state_fn.input_genes
+
+            # allow genes, or gene names
+            dep_gene_names = [ g.name if isinstance(g, Gene) else g
+                               for g in dep_gene_names ]
         else:
             # only support explicit kwargs, because otherwise we are a bit
             # fragile with respect to order of arguments.
@@ -478,6 +487,7 @@ class Receptor(Gene):
 
     def activated_by(self, *, activator=None, source=None, delay=1):
         if activator is None:   # @CTB deprecated
+            # assert 0
             activator = source
         if activator is None:
             raise Exception("must supply an activator!")
