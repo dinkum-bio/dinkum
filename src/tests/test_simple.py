@@ -377,3 +377,4 @@ def test_delayed_activation():
 
     # run!
     dinkum.run(start=1, stop=5)
+

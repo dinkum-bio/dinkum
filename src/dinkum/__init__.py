@@ -15,13 +15,7 @@ from .vfg import GeneStateInfo, DEFAULT_OFF
 from . import vfn
 from . import observations
 from . import utils
-
-class DinkumException(Exception):
-    pass
-
-class DinkumObservationFailed(DinkumException):
-    pass
-
+from .exceptions import *
 
 def reset(*, verbose=True):
     vfg.reset()
