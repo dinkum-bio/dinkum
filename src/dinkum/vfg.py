@@ -295,10 +295,12 @@ class Interaction_Arbitrary(Interactions):
     def __init__(self, *, dest=None, state_fn=None, delay=1):
         assert dest
         assert state_fn
+        _check_gene_names = self._get_gene_names(state_fn)
 
         self.dest = dest
         self.state_fn = state_fn
         self.delay = delay
+
 
     def btp_autonomous_links(self):
         return []
@@ -306,8 +308,8 @@ class Interaction_Arbitrary(Interactions):
     def btp_signal_links(self):
         return []
 
-    def _get_genes_for_activation_fn(self, state_fn):
-        # get the names of the genes on the function => and their activity
+    def _get_gene_names(self, state_fn):
+        # get the names of the genes on the function
         if isinstance(state_fn, CustomActivation):
             dep_gene_names = state_fn.input_genes
         else:
@@ -319,7 +321,12 @@ class Interaction_Arbitrary(Interactions):
                 raise DinkumInvalidActivationFunction("must supply kwargs only")
             dep_gene_names = argspec.kwonlyargs
 
+        return dep_gene_names
+
+    def _get_genes_for_activation_fn(self, state_fn):
+        # get the activity of upstream genes
         dep_genes = []
+        dep_gene_names = self._get_gene_names(state_fn)
         for name in dep_gene_names:
             found = False
             for g in _genes:
@@ -435,10 +442,6 @@ class Gene:
         ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
         _add_rule(ix)
 
-    def custom_activation2(self, *, state_fn=None, delay=1):
-        ix = Interaction_ArbitraryComplex(dest=self, state_fn=state_fn, delay=delay)
-        _add_rule(ix)
-
 
 class Ligand(Gene):
     def __init__(self, *, name=None):
@@ -461,6 +464,7 @@ class Receptor(Gene):
         return f"Receptor('{self.name}')"
 
     def ligand(self, *, activator=None, ligand=None):
+        # assert 0, "legacy method!"
         # @CTB legacy
         if ligand is None:
             ligand = self._set_ligand

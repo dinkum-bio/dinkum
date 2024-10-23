@@ -87,4 +87,42 @@ def test_custom_1_fail():
     # run time course
     with pytest.raises(DinkumInvalidGene):
         tc = dinkum.run(1, 5)
-        
+
+
+def test_custom_bad_defn():
+    # invalid activation function defns - must be kwargs
+    dinkum.reset()
+
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    m = Tissue(name='M')
+
+    # must be explicitly named, not positional
+    def activator_fn(Z):
+        return X
+    with pytest.raises(DinkumInvalidActivationFunction):
+        y.custom_activation(state_fn=activator_fn, delay=1)
+
+    # no defaults
+    def activator_fn(Z=None):
+        return X
+    with pytest.raises(DinkumInvalidActivationFunction):
+        y.custom_activation(state_fn=activator_fn, delay=1)
+
+    # no defaults 2
+    def activator_fn(*, Z=None):
+        return X
+    with pytest.raises(DinkumInvalidActivationFunction):
+        y.custom_activation(state_fn=activator_fn, delay=1)
+
+    # no general kwargs
+    def activator_fn(**kwargs):
+        return X
+    with pytest.raises(DinkumInvalidActivationFunction):
+        y.custom_activation(state_fn=activator_fn, delay=1)
+
+    # no general args
+    def activator_fn(*args):
+        return X
+    with pytest.raises(DinkumInvalidActivationFunction):
+        y.custom_activation(state_fn=activator_fn, delay=1)
