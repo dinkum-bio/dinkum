@@ -121,7 +121,6 @@ class Interaction_IsPresent(Interactions):
                                                        active=False)
         # we have no opinion on activity outside our tissue!
 
-        #print('XXX', self.level, timepoint)
         self.level = round(self.level / self.decay + 0.5)
 
 
@@ -357,15 +356,14 @@ class Interaction_ArbitraryComplex(Interactions):
         if isinstance(state_fn, CustomActivation):
             dep_gene_names = state_fn.input_genes
         else:
-            dep_gene_names = inspect.getfullargspec(state_fn).args
+            dep_gene_names = inspect.getfullargspec(state_fn).kwonlyargs
 
         dep_genes = []
-        print('YYY', dep_gene_names)
         for name in dep_gene_names:
             found = False
             for g in _genes:
                 if g.name == name:
-                    dep_genes.append(g)
+                    dep_genes.append((name, g))
                     found = True
                     break
             if not found:
@@ -383,10 +381,10 @@ class Interaction_ArbitraryComplex(Interactions):
 
         # pass in their full GeneStateInfo
         delay = self.delay
-        dep_state = [ states.get_gene_state_info(timepoint, delay, g, tissue)
-                      for g in dep_genes ]
+        dep_state = { name: states.get_gene_state_info(timepoint, delay, g, tissue)
+                      for (name, g) in dep_genes }
 
-        result = self.state_fn(*dep_state)
+        result = self.state_fn(**dep_state)
         if result is not None:
             level, is_active = result
 
