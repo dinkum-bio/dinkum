@@ -56,7 +56,7 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
-        return
+        return None, None, None
 
     level_df, active_df = convert_states_to_dataframe(states, gene_names,
                                                       get_state_fn)

@@ -363,6 +363,16 @@ class Interaction_Arbitrary(Interactions):
 
         result = self.state_fn(**dep_state)
         if result is not None:
+            if not isinstance(result, GeneStateInfo):
+                try:
+                    if len(tuple(result)) == 2:
+                        result = GeneStateInfo(int(result[0]), bool(result[1]))
+                except:
+                    pass
+            if not isinstance(result, GeneStateInfo):
+                raise DinkumInvalidActivationResult(f"result '{result}' of custom activation function is not a GeneStateInfo tuple (and cannot be converted)")
+
+        if result is not None:
             level, is_active = result
 
             if is_active:
