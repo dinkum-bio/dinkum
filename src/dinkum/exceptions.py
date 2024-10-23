@@ -16,3 +16,5 @@ class DinkumNoSuchGene(DinkumException):
 class DinkumInvalidActivationFunction(DinkumException):
     pass
 
+class DinkumInvalidActivationResult(DinkumException):
+    pass
