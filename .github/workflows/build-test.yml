@@ -38,4 +38,4 @@ jobs:
 
     - name: notebooks
       shell: bash -l {0}
-      run: make nb-test
+      run: make nbtest
