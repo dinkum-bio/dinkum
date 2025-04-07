@@ -17,7 +17,6 @@ jobs:
         auto-update-conda: true
         python-version: 3.11
         channels: conda-forge,bioconda
-        miniforge-variant: Mambaforge
         miniforge-version: latest
         use-mamba: true
         mamba-version: "*"
