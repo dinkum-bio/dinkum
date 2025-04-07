@@ -8,3 +8,8 @@
 
 notebooks/basic-drawing.ipynb
 ```
+
+## Developer notes
+
+We use [`nbval`](https://github.com/computationalmodelling/nbval) to
+run notebooks with pytest.
