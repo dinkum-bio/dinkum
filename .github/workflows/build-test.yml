@@ -12,12 +12,11 @@ jobs:
         fetch-depth: 0
 
     - name: setup conda
-      uses: conda-incubator/setup-miniconda@3b0f2504dd76ef23b6d31f291f4913fb60ab5ff3
+      uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         python-version: 3.11
         channels: conda-forge,bioconda
-        miniforge-variant: Mambaforge
         miniforge-version: latest
         use-mamba: true
         mamba-version: "*"
@@ -27,7 +26,7 @@ jobs:
 
     - name: install dependencies
       shell: bash -l {0}
-      run: mamba install pytest
+      run: mamba install pytest make
 
     - name: install
       shell: bash -l {0}
@@ -36,3 +35,7 @@ jobs:
     - name: test
       shell: bash -l {0}
       run: pytest
+
+    - name: notebooks
+      shell: bash -l {0}
+      run: make nbtest
