@@ -3,6 +3,7 @@ __all__ = ["MultiTissuePanel",
 
 from .draw_ipycanvas import IpycanvasDrawer
 from .draw_pillow import PillowDrawer
+from dinkum import vfg
 
 class MultiTissuePanel:
     """
@@ -190,10 +191,12 @@ class TissueActivityPanel:
 
 class TissueActivityPanel_Draw:
     "Use the timep/gene location to draw gene activity."
-    active_color = "DeepSkyBlue"
-    present_color = (255, 0, 0)
-    present_mask = (0, 255, 255)
-    inactive_color = "DarkGrey"
+    active_color = "DeepSkyBlue" # blue!
+    active_receptor_color = "DarkOliveGreen" # blue!
+
+    present_color = (255, 0, 0)  # red!
+    present_mask = (0, 255, 255) # ...?
+    inactive_color = "DarkGrey"  # grey...
     
     def __init__(self, template):
         self.template = template
@@ -206,14 +209,18 @@ class TissueActivityPanel_Draw:
             for gene in gene_names:
                 color = None
 
+                active_color = self.active_color
                 gs = get_gene_state(tissue_name, tp, gene)
+                gene_obj = vfg.get_gene(gene)
+                if gene_obj.is_receptor:
+                    active_color = self.active_receptor_color
+
                 if gs.active:
-                    color = self.active_color
+                    color = active_color
                 elif gs.level > 0:
                     f = gs.level / 1000 # MAX_LEVEL @CTB
                     mask = self.present_mask
                     mask = tuple([ int(i * f) for i in mask ])
-                    #print('YYY', mask)
                     color = [ int(i+j) for (i, j) in zip(self.present_color, mask) ]
                     color = tuple(color)
                 else:

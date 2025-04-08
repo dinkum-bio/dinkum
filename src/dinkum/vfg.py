@@ -7,7 +7,14 @@ import collections
 from .exceptions import *
 from .vfn import check_is_valid_tissue
 
-GeneStateInfo = collections.namedtuple('GeneStateInfo', ['level', 'active'])
+class GeneStateInfo:
+    def __init__(self, level=0, active=False):
+        self.level = level
+        self.active = active
+
+    def __iter__(self):
+        return iter([self.level, self.active])
+
 DEFAULT_OFF = GeneStateInfo(level=0, active=False)
 
 _rules = []
@@ -21,6 +28,12 @@ def get_rules():
 
 def get_gene_names():
     return [ g.name for g in sorted(_genes) ]
+
+def get_gene(name):
+    for g in sorted(_genes):
+        if g.name == name:
+            return g
+    raise Exception(f"unknown genome name: '{name}'")
 
 def reset():
     global _rules
@@ -202,7 +215,7 @@ class Interaction_AndNot(Interactions):
     def btp_autonomous_links(self):
         yield [self.dest, self.src, "positive"]
         yield [self.dest, self.repressor, "negative"]
-                   
+
     def btp_signal_links(self):
         return []
 
@@ -235,7 +248,7 @@ class Interaction_And(Interactions):
     def btp_autonomous_links(self):
         for src in self.sources:
             yield [self.dest, src, "positive"]
-                   
+
     def btp_signal_links(self):
         return []
 
@@ -270,7 +283,7 @@ class Interaction_ToggleRepressed(Interactions):
     def btp_autonomous_links(self):
         yield [self.dest, self.tf, "positive"]
         yield [self.dest, self.cofactor, "positive"] # @CTB toggle
-                   
+
     def advance(self, *, timepoint=None, states=None, tissue=None):
         """
         The gene is active if the tf was active and the cofactor was active
@@ -386,6 +399,8 @@ class Interaction_Arbitrary(Interactions):
 
 
 class Gene:
+    is_receptor = False
+
     def __init__(self, *, name=None):
         global _genes
 
@@ -472,6 +487,8 @@ class Ligand(Gene):
 
 
 class Receptor(Gene):
+    is_receptor = True
+
     def __init__(self, *, name=None, ligand=None):
         super().__init__(name=name)
         assert name
