@@ -9,7 +9,7 @@ test:
 	pytest
 
 nbtest:
-	py.test --nbval-lax notebooks/getting-started.ipynb --current-env
+	py.test --nbval-lax notebooks/0-getting-started.ipynb --current-env
 	py.test --nbval-lax notebooks/1-positive-feedback.ipynb --current-env
 	py.test --nbval-lax notebooks/2-simple-oscillation.ipynb --current-env
 	py.test --nbval-lax notebooks/4-double-negative-gate.ipynb --current-env
