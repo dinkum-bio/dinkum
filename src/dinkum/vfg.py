@@ -15,6 +15,9 @@ class GeneStateInfo:
     def __iter__(self):
         return iter([self.level, self.active])
 
+    def __repr__(self):
+        return f"<level={self.level},active={self.active}>"
+
 DEFAULT_OFF = GeneStateInfo(level=0, active=False)
 
 _rules = []
