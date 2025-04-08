@@ -10,7 +10,7 @@ def define_model():
 
     # gataE, gcm, foxA
 
-    # set it all up!                                                            
+    # set it all up!
     pmar1 = Gene(name='pmar1')
     hesC = Gene(name='hesC')
     alx1 = Gene(name='alx1')
