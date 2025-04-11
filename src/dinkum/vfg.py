@@ -12,6 +12,9 @@ class GeneStateInfo:
         self.level = level
         self.active = active
 
+    def __bool__(self):
+        return bool(self.level > 0 and self.active)
+
     def __iter__(self):
         return iter([self.level, self.active])
 
@@ -58,6 +61,11 @@ def check_is_valid_gene(g):
     if not g in _genes:
         raise DinkumInvalidGene(f"{g.name} is invalid")
 
+def check_is_tf(g):
+    check_is_valid_gene(g)
+    if not g.is_tf:
+        raise DinkumNotATranscriptionFactor(f"{g.name} is not a transcription factor")
+
 
 def _retrieve_ligands(timepoint, states, tissue, delay):
     "Retrieve all ligands in neighboring tissues for the given timepoint/delay"
@@ -67,6 +75,7 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     for gene in _genes:
         if gene._is_ligand:
             for neighbor in tissue.neighbors:
+                # for neighbor in (tissue, *tissue.neighbors):@CTB
                 if states.is_active(timepoint, delay, gene, neighbor):
                     ligands.add(gene)
 
@@ -156,8 +165,9 @@ class Interaction_IsPresent(Interactions):
 
 class Interaction_Activates(Interactions):
     def __init__(self, *, source=None, dest=None, delay=1):
-        assert isinstance(source, Gene), f"'{source}' must be a Gene (but is not)"
-        assert isinstance(dest, Gene), f"'{dest}' must be a Gene (but is not)"
+        check_is_valid_gene(dest)
+        check_is_tf(source)
+
         self.src = source
         self.dest = dest
         self.delay = delay
@@ -185,9 +195,13 @@ class Interaction_Activates(Interactions):
 
 class Interaction_Or(Interactions):
     def __init__(self, *, sources=None, dest=None, delay=1):
+        check_is_valid_gene(dest)
         for g in sources:
-            assert isinstance(g, Gene), f"source '{g}' must be a Gene"
-        assert isinstance(dest, Gene), f"dest '{dest}' must be a Gene"
+            check_is_tf(g)
+
+        for tf in sources:
+            if not tf.is_tf:
+                raise DinkumNotATranscriptionFactor(tf.name)
         self.sources = sources
         self.dest = dest
         self.delay = delay
@@ -219,10 +233,17 @@ class Interaction_Or(Interactions):
 
 class Interaction_AndNot(Interactions):
     def __init__(self, *, source=None, repressor=None, dest=None, delay=1):
+        check_is_valid_gene(dest)
+        check_is_tf(source)
+        check_is_tf(repressor)
+
         self.src = source
         self.repressor = repressor
         self.dest = dest
         self.delay = delay
+        for tf in (self.src, self.repressor):
+            if not tf.is_tf:
+                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         yield [self.dest, self.src, "positive"]
@@ -253,9 +274,16 @@ class Interaction_AndNot(Interactions):
 
 class Interaction_And(Interactions):
     def __init__(self, *, sources=None, dest=None, delay=1):
+        check_is_valid_gene(dest)
+        for g in sources:
+            check_is_tf(g)
+
         self.sources = sources
         self.dest = dest
         self.delay = delay
+        for tf in self.sources:
+            if not tf.is_tf:
+                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         for src in self.sources:
@@ -284,7 +312,13 @@ class Interaction_And(Interactions):
 
 class Interaction_ToggleRepressed(Interactions):
     def __init__(self, *, tf=None, cofactor=None, dest=None, delay=1):
+        check_is_valid_gene(dest)
+        check_is_tf(tf)
+        check_is_valid_gene(cofactor)
+
         self.tf = tf
+        if not self.tf.is_tf:
+            raise DinkumNotATranscriptionFactor(self.tf.name)
         self.cofactor = cofactor
         self.dest = dest
         self.delay = delay
@@ -365,6 +399,7 @@ class Interaction_Arbitrary(Interactions):
             found = False
             for g in _genes:
                 if g.name == name:
+                    check_is_tf(g)
                     dep_genes.append((name, g))
                     found = True
                     break
@@ -412,6 +447,7 @@ class Interaction_Arbitrary(Interactions):
 
 class Gene:
     is_receptor = False
+    is_tf = True
 
     def __init__(self, *, name=None):
         global _genes
@@ -456,9 +492,10 @@ class Gene:
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_or(self, *, sources=None, delay=1):
+    def activated_by_or(self, *, sources=None, delay=1):
         ix = Interaction_Or(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
+    activated_or = activated_by_or
 
     def and_not(self, *, activator=None, repressor=None, delay=1):
         ix = Interaction_AndNot(source=activator, repressor=repressor,
@@ -490,6 +527,8 @@ class Gene:
 
 
 class Ligand(Gene):
+    is_tf = False
+
     def __init__(self, *, name=None):
         super().__init__(name=name)
         self._is_ligand = True

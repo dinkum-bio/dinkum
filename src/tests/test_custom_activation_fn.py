@@ -19,6 +19,8 @@ def test_custom_fn_1():
     m = Tissue(name='M')
 
     def activator_fn(*, X):
+        if X.level == 0 or not X.active:
+            assert bool(X) == False
         return X
 
     x.is_present(where=m, start=1, duration=1)

@@ -189,6 +189,35 @@ def test_simple_positive_feedback():
     y = Gene(name='Y')
 
     y.activated_by(source=x)
+    x.activated_by_or(sources=[a, y])
+
+    m = Tissue(name='M')
+    a.is_present(where=m, start=1, duration=2)
+
+    # run!
+    dinkum.run(1, 5)
+
+
+def test_simple_positive_feedback_old_name_activated_or():
+    dinkum.reset()
+
+    # establish preconditions
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
+
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+
+    observations.check_is_present(gene='X', time=4, tissue='M')
+    observations.check_is_present(gene='Y', time=4, tissue='M')
+
+    # set it all up!
+    a = Gene(name='A')
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    y.activated_by(source=x)
+    # CTB this is an old name for 'activated_by_or'. Check that it works.
     x.activated_or(sources=[a, y])
 
     m = Tissue(name='M')
