@@ -1,6 +1,7 @@
 import pytest
 
 import dinkum
+from dinkum.exceptions import *
 from dinkum.vfg import Gene, Receptor, Ligand
 from dinkum.vfn import Tissue
 from dinkum import Timecourse
@@ -8,6 +9,7 @@ from dinkum import observations
 
 
 def test_signaling_orig_api():
+    # CTB deprecate?
     dinkum.reset()
 
     #observations.check_is_present(gene='R', tissue='M', time=2)
@@ -40,6 +42,7 @@ def test_signaling_orig_api():
 
 
 def test_signaling_new_api():
+    # CTB deprecate?
     # use newer API for Receptor
     dinkum.reset()
 
@@ -73,6 +76,7 @@ def test_signaling_new_api():
 
 
 def test_signaling_new_api_3():
+    # use newEST API for Receptor.
     dinkum.reset()
 
     #observations.check_is_present(gene='R', tissue='M', time=2)
@@ -93,7 +97,7 @@ def test_signaling_new_api_3():
 
     r.ligand(activator=a)
 
-    y.activated_by(source=r)    # @CTB update.
+    y.activated_by(source=r)
 
     # receptor is always present in M
     m.add_gene(gene=a, start=1)
@@ -102,6 +106,50 @@ def test_signaling_new_api_3():
     n.add_gene(gene=x, start=2)
 
     dinkum.run(1, 5)
+
+
+def test_signaling_ligand_is_not_direct():
+    # check that ligands are not allowed to directly regulate
+    dinkum.reset()
+
+    x = Ligand(name='X')
+    a = Gene(name='A')
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.activated_by(source=x)
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.activated_by_or(sources=[x])
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.activated_by_and(sources=[x])
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.and_not(activator=x, repressor=a)
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.and_not(activator=a, repressor=x)
+
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        a.toggle_repressed(tf=x)
+
+
+def test_signaling_ligand_is_not_direct_custom():
+    # check that ligands can't directly activate in custom activation fn
+    dinkum.reset()
+
+    m = Tissue(name='M')
+    x = Ligand(name='X')
+    a = Gene(name='A')
+
+    m.add_gene(gene=x, start=1)
+
+    def activator_fn(*, X):
+        return X
+
+    a.custom_activation(state_fn=activator_fn, delay=1)
+    with pytest.raises(DinkumNotATranscriptionFactor):
+        dinkum.run(1, 12)
 
 
 def test_community_effect():

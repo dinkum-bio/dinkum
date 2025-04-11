@@ -7,6 +7,9 @@ class DinkumObservationFailed(DinkumException):
 class DinkumInvalidGene(DinkumException):
     pass
 
+class DinkumNotATranscriptionFactor(DinkumException):
+    pass
+
 class DinkumInvalidTissue(DinkumException):
     pass
 
