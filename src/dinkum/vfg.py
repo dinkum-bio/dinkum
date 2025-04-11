@@ -12,6 +12,9 @@ class GeneStateInfo:
         self.level = level
         self.active = active
 
+    def __bool__(self):
+        return bool(self.level > 0 and self.active)
+
     def __iter__(self):
         return iter([self.level, self.active])
 
