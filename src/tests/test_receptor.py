@@ -8,6 +8,30 @@ from dinkum import Timecourse
 from dinkum import observations
 
 
+def test_neighbors():
+    dinkum.reset()
+
+    m = Tissue(name='M')
+    n = Tissue(name='N')
+
+    assert m in m.neighbors     # always self!
+    m.add_neighbor(neighbor=n)
+    assert n in m.neighbors
+    assert m in n.neighbors     # check bidirectional!
+
+
+def test_neighbors_one_way():
+    dinkum.reset()
+
+    m = Tissue(name='M')
+    n = Tissue(name='N')
+
+    assert m in m.neighbors     # always self!
+    m.add_neighbor(neighbor=n, bidirectional=False)
+    assert n in m.neighbors
+    assert m not in n.neighbors     # check bidirectional!
+
+
 def test_signaling_orig_api():
     # CTB deprecate?
     dinkum.reset()
@@ -21,7 +45,6 @@ def test_signaling_orig_api():
     n = Tissue(name='N')
 
     m.add_neighbor(neighbor=n)
-    assert n in m.neighbors     # should this be bidirectional? probably.
 
     x = Gene(name='X')
     a = Gene(name='A')

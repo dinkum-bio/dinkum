@@ -31,7 +31,7 @@ class Tissue:
     def __init__(self, *, name=None):
         assert name, "Tissue must have a name"
         self.name = name
-        self.neighbors = set()
+        self.neighbors = set([self])
 
         _add_tissue(self)
 
@@ -56,6 +56,8 @@ class Tissue:
         assert start is not None
         gene.is_present(start=start, duration=duration, where=self)
 
-    def add_neighbor(self, *, neighbor=None):
+    def add_neighbor(self, *, neighbor=None, bidirectional=True):
         assert neighbor
         self.neighbors.add(neighbor)
+        if bidirectional:
+            neighbor.neighbors.add(self) # make it bidirectional by default
