@@ -459,9 +459,10 @@ class Gene:
         ix = Interaction_Activates(source=source, dest=self, delay=delay)
         _add_rule(ix)
 
-    def activated_or(self, *, sources=None, delay=1):
+    def activated_by_or(self, *, sources=None, delay=1):
         ix = Interaction_Or(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
+    activated_or = activated_by_or
 
     def and_not(self, *, activator=None, repressor=None, delay=1):
         ix = Interaction_AndNot(source=activator, repressor=repressor,

@@ -150,7 +150,7 @@ def test_community_effect():
     r = Receptor(name='R')      # receptor
     y = Gene(name='Y')          # activated by R
 
-    ligand.activated_or(sources=[a, y])
+    ligand.activated_by_or(sources=[a, y])
 
     r.ligand(activator=b, ligand=ligand) # expression driven by B,
                                          # activated by ligand
