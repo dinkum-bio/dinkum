@@ -99,7 +99,7 @@ def test_signaling_new_api():
 
 
 def test_signaling_new_api_3():
-    # use newEST API for Receptor.
+    # use newest API for Receptor.
     dinkum.reset()
 
     #observations.check_is_present(gene='R', tissue='M', time=2)
@@ -127,6 +127,74 @@ def test_signaling_new_api_3():
 
     # x is present in N at time >= 2
     n.add_gene(gene=x, start=2)
+
+    dinkum.run(1, 5)
+
+
+def test_signaling_new_api_3_default_no_juxtacrine():
+    # use newest API for Receptor; check that by default signals
+    # signal back to receptors in same cell.
+    dinkum.reset()
+
+    observations.check_is_not_present(gene='Y', tissue='N', time=1)
+    observations.check_is_not_present(gene='Y', tissue='M', time=1)
+    observations.check_is_present(gene='Y', tissue='N', time=3)
+    observations.check_is_present(gene='Y', tissue='M', time=3)
+
+    m = Tissue(name='M')
+    n = Tissue(name='N')
+
+    m.add_neighbor(neighbor=n)
+    assert n in m.neighbors
+
+    x = Ligand(name='X')
+    r = Receptor(name='R', ligand=x)
+    y = Gene(name='Y')
+
+    y.activated_by(source=r)
+
+    # receptor is always present in M and N
+    m.add_gene(gene=r, start=1)
+    n.add_gene(gene=r, start=1)
+
+    # add ligand at t=1
+    m.add_gene(gene=x, start=1)
+
+    # now, y should be turned on by time 3 by activated receptor
+
+    dinkum.run(1, 5)
+
+
+def test_signaling_new_api_3_juxtacrine():
+    # use newest API for Receptor; check that by default signals
+    # signal back to receptors in same cell.
+    dinkum.reset()
+
+    observations.check_is_not_present(gene='Y', tissue='N', time=1)
+    observations.check_is_not_present(gene='Y', tissue='M', time=1)
+    observations.check_is_present(gene='Y', tissue='N', time=3)
+    observations.check_is_not_present(gene='Y', tissue='M', time=3)
+
+    m = Tissue(name='M')
+    n = Tissue(name='N')
+
+    m.add_neighbor(neighbor=n)
+    assert n in m.neighbors
+
+    x = Ligand(name='X', is_juxtacrine=True)
+    r = Receptor(name='R', ligand=x)
+    y = Gene(name='Y')
+
+    y.activated_by(source=r)
+
+    # receptor is always present in M and N
+    m.add_gene(gene=r, start=1)
+    n.add_gene(gene=r, start=1)
+
+    # add ligand at t=1
+    m.add_gene(gene=x, start=1)
+
+    # now, y should be turned on by time 3 by activated receptor
 
     dinkum.run(1, 5)
 
