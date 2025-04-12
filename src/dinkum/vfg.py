@@ -77,7 +77,12 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
             for neighbor in tissue.neighbors:
                 # for neighbor in (tissue, *tissue.neighbors):@CTB
                 if states.is_active(timepoint, delay, gene, neighbor):
-                    ligands.add(gene)
+                    is_juxtacrine = getattr(gene, 'is_juxtacrine', False)
+                    if is_juxtacrine:
+                        if neighbor != tissue:
+                            ligands.add(gene)
+                    else:
+                        ligands.add(gene)
 
     return ligands
 
@@ -529,8 +534,9 @@ class Gene:
 class Ligand(Gene):
     is_tf = False
 
-    def __init__(self, *, name=None):
+    def __init__(self, *, name=None, is_juxtacrine=False):
         super().__init__(name=name)
+        self.is_juxtacrine = is_juxtacrine
         self._is_ligand = True
 
     def __repr__(self):
