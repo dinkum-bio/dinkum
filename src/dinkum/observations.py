@@ -37,10 +37,10 @@ class Obs_IsPresent(Observation):
             return None
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        return tissue_state.is_active(gene_name=self.gene_name)
+        return tissue_state.is_present(gene_name=self.gene_name)
 
     def render(self):
-        return f"{self.gene_name} is ON in tissue {self.tissue_name} at time {self.time}"
+        return f"{self.gene_name} is PRESENT in tissue {self.tissue_name} at time {self.time}"
 
 def check_is_present(*, gene=None, time=None, tissue=None):
     ob = Obs_IsPresent(gene=gene, time=time, tissue=tissue)
@@ -63,10 +63,11 @@ class Obs_IsNotPresent(Observation):
             return None
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        return not tissue_state.is_active(gene_name=self.gene_name)
+        print('ZZZ', tissue_state)
+        return not tissue_state.is_present(gene_name=self.gene_name)
 
     def render(self):
-        return f"{self.gene_name} is NOT ON in tissue {self.tissue_name} at time {self.time}"
+        return f"{self.gene_name} is NOT PRESENT in tissue {self.tissue_name} at time {self.time}"
 
 def check_is_not_present(*, gene=None, time=None, tissue=None):
     ob = Obs_IsNotPresent(gene=gene, time=time, tissue=tissue)
@@ -83,10 +84,10 @@ class Obs_IsNeverPresent(Observation):
 
     def check(self, state):
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        return not tissue_state.is_active(gene_name=self.gene_name)
+        return not tissue_state.is_present(gene_name=self.gene_name)
 
     def render(self):
-        return f"{self.gene_name} is NEVER ON in tissue {self.tissue_name}"
+        return f"{self.gene_name} is NEVER PRESENT in tissue {self.tissue_name}"
 
 def check_is_never_present(*, gene=None, tissue=None):
     ob = Obs_IsNeverPresent(gene=gene, tissue=tissue)
@@ -102,15 +103,67 @@ class Obs_IsAlwaysPresent(Observation):
 
     def check(self, state):
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        return tissue_state.is_active(gene_name=self.gene_name)
+        return tissue_state.is_present(gene_name=self.gene_name)
 
     def render(self):
-        return f"{self.gene_name} is ALWAYS ON in tissue {self.tissue_name}"
+        return f"{self.gene_name} is ALWAYS PRESENT in tissue {self.tissue_name}"
 
 
 def check_is_always_present(*, gene=None, tissue=None):
     ob = Obs_IsAlwaysPresent(gene=gene, tissue=tissue)
     _add_obs(ob)
+
+
+class Obs_IsActive(Observation):
+    def __init__(self, *, gene=None, time=None, tissue=None):
+        assert gene, "gene must be set"
+        assert time is not None, "time must be set"
+        assert tissue is not None, "tissue must be set"
+        self.gene_name = gene
+        self.time = time
+        self.tissue_name = tissue
+
+    def check(self, state):
+        # not applicable
+        if state.time != self.time:
+            return None
+
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        return tissue_state.is_active(gene_name=self.gene_name)
+
+    def render(self):
+        return f"{self.gene_name} is ACTIVE in tissue {self.tissue_name} at time {self.time}"
+
+def check_is_active(*, gene=None, time=None, tissue=None):
+    ob = Obs_IsActive(gene=gene, time=time, tissue=tissue)
+    _add_obs(ob)
+
+
+
+class Obs_IsNotActive(Observation):
+    def __init__(self, *, gene=None, time=None, tissue=None):
+        assert gene
+        assert time is not None
+        assert tissue is not None
+        self.gene_name = gene
+        self.time = time
+        self.tissue_name = tissue
+
+    def check(self, state):
+        # not applicable
+        if state.time != self.time:
+            return None
+
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        return not tissue_state.is_active(gene_name=self.gene_name)
+
+    def render(self):
+        return f"{self.gene_name} is NOT ACTIVE in tissue {self.tissue_name} at time {self.time}"
+
+def check_is_not_active(*, gene=None, time=None, tissue=None):
+    ob = Obs_IsNotActive(gene=gene, time=time, tissue=tissue)
+    _add_obs(ob)
+
 
 
 def test_observations(state):
@@ -122,7 +175,7 @@ def test_observations(state):
         elif check:
             print('passed:', ob.render())
         else:
-            print('** FAILED:', ob.render())
+            print('** FAILED: it is not true that:', ob.render())
             succeed = False
 
     return succeed

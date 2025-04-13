@@ -32,12 +32,29 @@ def test_neighbors_one_way():
     assert m not in n.neighbors     # check bidirectional!
 
 
-def test_signaling_orig_api():
-    # CTB deprecate?
+def test_ligand_receptor():
     dinkum.reset()
 
-    #observations.check_is_present(gene='R', tissue='M', time=2)
+    x = Gene(name='X')
+    with pytest.raises(DinkumNotALigand):
+        r = Receptor(name='R', ligand=x)
+
+
+def test_signaling():
+    dinkum.reset()
+
+    # receptor present, but not active at time 2 in M:
+    observations.check_is_present(gene='R', tissue='M', time=2)
+    observations.check_is_not_active(gene='R', tissue='M', time=2)
+
+    # ligand present at time 2 in N
     observations.check_is_present(gene='X', tissue='N', time=2)
+
+    # receptor present _and_ active at time 3 in M:
+    observations.check_is_present(gene='R', tissue='M', time=3)
+    observations.check_is_active(gene='R', tissue='M', time=3)
+
+    # Y is off at t=2, on at t=4
     observations.check_is_not_present(gene='Y', tissue='M', time=2)
     observations.check_is_present(gene='Y', tissue='M', time=4)
 
@@ -46,13 +63,12 @@ def test_signaling_orig_api():
 
     m.add_neighbor(neighbor=n)
 
-    x = Gene(name='X')
+    x = Ligand(name='X')
     a = Gene(name='A')
-    r = Receptor(name='R')
+    r = Receptor(name='R', ligand=x)
     y = Gene(name='Y')
 
-    r.ligand(activator=a, ligand=x)
-
+    r.activated_by(source=a)
     y.activated_by(source=r)
 
     # receptor is always present in M
@@ -61,15 +77,15 @@ def test_signaling_orig_api():
     # x is present in N at time >= 2
     n.add_gene(gene=x, start=2)
 
-    dinkum.run(1, 5)
+    def trace_me(**kw):
+        print(kw)
+    dinkum.run(1, 5, trace_fn=trace_me)
 
 
-def test_signaling_new_api():
-    # CTB deprecate?
-    # use newer API for Receptor
+def test_signaling_2():
     dinkum.reset()
 
-    #observations.check_is_present(gene='R', tissue='M', time=2)
+    observations.check_is_present(gene='R', tissue='M', time=2)
     observations.check_is_present(gene='X', tissue='N', time=2)
     observations.check_is_not_present(gene='Y', tissue='M', time=2)
     observations.check_is_present(gene='Y', tissue='M', time=4)
@@ -80,13 +96,12 @@ def test_signaling_new_api():
     m.add_neighbor(neighbor=n)
     assert n in m.neighbors     # should this be bidirectional? probably.
 
-    x = Gene(name='X')
+    x = Ligand(name='X')
     a = Gene(name='A')
     r = Receptor(name='R', ligand=x)
     y = Gene(name='Y')
 
-    r.ligand(activator=a)
-
+    r.activated_by(source=a)
     y.activated_by(source=r)
 
     # receptor is always present in M
@@ -95,10 +110,12 @@ def test_signaling_new_api():
     # x is present in N at time >= 2
     n.add_gene(gene=x, start=2)
 
-    dinkum.run(1, 5)
+    def trace_me(**kw):
+        print(kw)
+    dinkum.run(1, 5, trace_fn=trace_me)
 
 
-def test_signaling_new_api_3():
+def test_signaling_3():
     # use newest API for Receptor.
     dinkum.reset()
 
@@ -118,17 +135,21 @@ def test_signaling_new_api_3():
     r = Receptor(name='R', ligand=x)
     y = Gene(name='Y')
 
-    r.ligand(activator=a)
-
+    x.activated_by(source=a)
     y.activated_by(source=r)
 
-    # receptor is always present in M
     m.add_gene(gene=a, start=1)
+
+    # receptor is always present in M
+    m.add_gene(gene=r, start=1)
 
     # x is present in N at time >= 2
     n.add_gene(gene=x, start=2)
 
-    dinkum.run(1, 5)
+
+    def trace_me(**kw):
+        print(kw)
+    dinkum.run(1, 5, trace_fn=trace_me)
 
 
 def test_signaling_new_api_3_default_no_juxtacrine():
@@ -247,7 +268,6 @@ def test_community_effect():
     # transient input in one cell => mutual lock on via positive feedback/
     # signalling
     # good question for students: how long does pulse need to be, and why??
-    # CTB: _active_ vs _present_
     dinkum.reset()
 
     observations.check_is_present(gene='A', tissue='M', time=6)
@@ -255,12 +275,12 @@ def test_community_effect():
 
     observations.check_is_not_present(gene='L', tissue='M', time=1) # not act
     observations.check_is_present(gene='L', tissue='M', time=2) # active
-    observations.check_is_present(gene='R', tissue='N', time=3) # active
+    observations.check_is_active(gene='R', tissue='N', time=3) # active
 
     observations.check_is_present(gene='Y', tissue='N', time=4)
     observations.check_is_present(gene='L', tissue='N', time=5)
 
-    observations.check_is_present(gene='R', tissue='M', time=6) # active
+    observations.check_is_active(gene='R', tissue='M', time=6) # active
 
     # both on (& staying on)
     observations.check_is_present(gene='Y', tissue='N', time=7)
@@ -285,16 +305,15 @@ def test_community_effect():
     n.add_gene(gene=b, start=1)
 
     # VFG: 
-    ligand = Gene(name='L')          # ligand
-    r = Receptor(name='R')      # receptor
+    ligand = Ligand(name='L')          # ligand
+    r = Receptor(name='R', ligand=ligand)      # receptor
     y = Gene(name='Y')          # activated by R
 
     ligand.activated_by_or(sources=[a, y])
 
-    r.ligand(activator=b, ligand=ligand) # expression driven by B,
-                                         # activated by ligand
-
     y.activated_by(source=r)    # transcription of Y turned on by activated R.
+
+    r.activated_by(source=b)
 
     # so,
     # pulse of A in M turns on L in M.
@@ -305,4 +324,6 @@ def test_community_effect():
     # L then activates R in M.
     # R in M then activates L in M.
 
-    dinkum.run(1, 12)
+    def trace_me(**kw):
+        print(kw)
+    dinkum.run(1, 12, trace_fn=trace_me)

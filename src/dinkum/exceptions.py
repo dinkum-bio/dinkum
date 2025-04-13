@@ -13,6 +13,9 @@ class DinkumInvalidGene(DinkumException):
 class DinkumNotATranscriptionFactor(DinkumException):
     pass
 
+class DinkumNotALigand(DinkumException):
+    pass
+
 class DinkumInvalidTissue(DinkumException):
     pass
 

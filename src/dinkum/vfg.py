@@ -448,7 +448,6 @@ class Gene:
         self.name = name
 
         _genes.append(self)
-        self._set_ligand = None
         self._is_ligand = None
 
     def __repr__(self):
@@ -469,12 +468,9 @@ class Gene:
     def present(self):
         return 1
 
-    def ligand_present(self):
-        return (self._set_ligand is None) or 1 # @CTB
-
     def active(self):           # present = active
         if self._is_ligand:
-            return self.present() and self.ligand_present()
+            return self.present() and self._set_ligand
         else:
             return self.present()
 
@@ -537,24 +533,11 @@ class Receptor(Gene):
         super().__init__(name=name)
         assert name
         self._set_ligand = ligand
-        if ligand:
-            ligand._is_ligand = True
+        if ligand and not isinstance(ligand, Ligand):
+            raise DinkumNotALigand(f"gene {ligand.name} is not a Ligand")
 
     def __repr__(self):
         return f"Receptor('{self.name}')"
-
-    def ligand(self, *, activator=None, ligand=None):
-        # assert 0, "legacy method!"
-        # @CTB legacy
-        if ligand is None:
-            ligand = self._set_ligand
-            if ligand is None:
-                raise Exception("need to specify a ligand for this receptor, either at creation or here")
-        else:
-            ligand._is_ligand = True
-
-        ix = Interaction_Activates(source=activator, dest=self, delay=1)
-        _add_rule(ix)
 
     def activated_by(self, *, activator=None, source=None, delay=1):
         if activator is None:   # @CTB deprecated

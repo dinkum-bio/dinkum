@@ -431,8 +431,13 @@ def test_delayed_activation_trace():
     observations.check_is_present(gene='Y', time=3, tissue='M')
 
     x = []
-    def trace_me(*, gene=None, state_info=None):
-        x.append((gene, state_info))
+    def trace_me(*, gene=None, state_info=None, tp=None, tissue=None):
+        assert gene is not None
+        assert state_info is not None
+        assert tp is not None
+        assert tissue is not None
+
+        x.append((gene, state_info, tp, tissue))
 
     # run!
     dinkum.run(start=1, stop=5, trace_fn=trace_me)
@@ -440,9 +445,11 @@ def test_delayed_activation_trace():
     assert len(x) == 8
     print(x)
 
-    gene, state_info = x[0]
+    gene, state_info, tp, tissue = x[0]
     assert gene.name == 'X'
     assert str(state_info) == '<level=100,active=True>'
+    assert tissue.name == 'M'
+    assert tp == 1
 
 
 def test_multiple_rules_error():

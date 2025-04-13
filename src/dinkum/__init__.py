@@ -90,6 +90,13 @@ class GeneStates:
         assert state_info is not None
         self.genes_by_name[gene.name] = state_info
 
+    def is_present(self, gene_name):
+        state_info = self.genes_by_name.get(gene_name)
+        if state_info is None or state_info.level == 0:
+            return False
+
+        return True
+
     def is_active(self, gene_name):
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
         return state_info.active
@@ -239,21 +246,22 @@ class Timecourse:
         for tp in range(start, stop + 1):
             next_state = TissueAndGeneStateAtTime(tissues=tissues, time=tp)
 
-            for t in tissues:
+            for tissue in tissues:
                 seen = set()
                 next_active = GeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, state_info in r.advance(timepoint=tp,
-                                                   states=self.states_d,
-                                                   tissue=t):
+                    for gene, state_info in r.advance(timepoint=tp,
+                                                      states=self.states_d,
+                                                      tissue=tissue):
 
-                        next_active.set_gene_state(gene=g,
+                        next_active.set_gene_state(gene=gene,
                                                    state_info=state_info)
                         if trace_fn:
-                            trace_fn(gene=g, state_info=state_info)
+                            trace_fn(tp=tp, tissue=tissue,
+                                     gene=gene, state_info=state_info)
 
-                next_state[t] = next_active
+                next_state[tissue] = next_active
 
             # advance => next state
             self.states_d[tp] = next_state
