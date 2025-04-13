@@ -238,8 +238,9 @@ class TissueActivityPanel_Draw:
 
                 # check a few constraints...
                 if gs.level == 0 and gs.active:
-                    raise Exception("what")
+                    print(f"WARNING: at time {tp} gene {gene_name} has level == 0 but is active! Is this intentional??")
                 if not gene_obj.is_receptor and gs.level > 0 and not gs.active:
+                    print(F"WARNING: at time {tp} gene {gene_name} has level {gs.level} but is not active! Is this intentional??")
                     raise Exception("what 2")
 
                 color = map_to_color(gs.level, gene_obj.is_receptor,
