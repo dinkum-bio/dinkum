@@ -164,6 +164,25 @@ def test_custom_class_1():
     assert len(tc) == 5
 
 
+def test_custom_class_1_bad_args():
+    # test that custom classes fail with bad activator fn __call__
+    set_debug(True)
+
+    # basic does-it-work
+    dinkum.reset()
+
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    m = Tissue(name='M')
+
+    class ActivateMe(CustomActivation):
+        def __call__(self, foo, *, X):
+            return X
+
+    with pytest.raises(DinkumInvalidActivationFunction):
+        state_fn = ActivateMe(input_genes=['X'])
+
+
 def test_custom_class_2():
     # does it work with a custom class? give a list of genes.
     set_debug(True)
