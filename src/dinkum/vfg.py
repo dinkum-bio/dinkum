@@ -246,9 +246,6 @@ class Interaction_AndNot(Interactions):
         self.repressor = repressor
         self.dest = dest
         self.delay = delay
-        for tf in (self.src, self.repressor):
-            if not tf.is_tf:
-                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         yield [self.dest, self.src, "positive"]
