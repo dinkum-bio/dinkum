@@ -7,7 +7,7 @@ from dinkum import vfg
 import matplotlib
 
 gene_cmap = matplotlib.colormaps.get_cmap('Blues')
-#receptor_off_cmap = matplotlib.colormaps.get_cmap('Reds')
+receptor_off_cmap = matplotlib.colormaps.get_cmap('Reds')
 receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
 ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
 
