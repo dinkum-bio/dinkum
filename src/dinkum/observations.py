@@ -107,6 +107,7 @@ class Obs_IsAlwaysPresent(Observation):
     def render(self):
         return f"{self.gene_name} is ALWAYS ON in tissue {self.tissue_name}"
 
+
 def check_is_always_present(*, gene=None, tissue=None):
     ob = Obs_IsAlwaysPresent(gene=gene, tissue=tissue)
     _add_obs(ob)

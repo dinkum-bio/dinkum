@@ -6,7 +6,7 @@ all:
 	./simple3.py
 
 test:
-	pytest
+	pytest --cov --cov-report=html:coverage_report
 
 nbtest:
 	py.test --nbval-lax notebooks/0-getting-started.ipynb --current-env

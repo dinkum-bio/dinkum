@@ -1,5 +1,7 @@
 """
-Top-level dinkum module
+Top-level dinkum module.
+
+Contains core execution information.
 """
 import sys
 from importlib.metadata import version
@@ -26,7 +28,7 @@ def reset(*, verbose=True):
 
 
 def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
-                       verbose=False, save_image=None):
+                       verbose=False, save_image=None, trace_fn=None):
     """
     Run and display the circuit model.
 
@@ -52,7 +54,8 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
             tc_record_activity(start=start,
                                stop=stop,
                                gene_names=gene_names,
-                               verbose=verbose)
+                               verbose=verbose,
+                               trace_fn=trace_fn)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
@@ -202,7 +205,7 @@ class Timecourse:
     """
     Run a time course for a system b/t two time points, start and stop.
     """
-    def __init__(self, *, start=None, stop=None):
+    def __init__(self, *, start=None, stop=None, trace_fn=None):
         assert start is not None
         assert stop is not None
 
@@ -211,6 +214,7 @@ class Timecourse:
         self.start = start
         self.stop = stop
         self.states_d = TissueGeneStates()
+        self.trace_fn = trace_fn
 
     def __iter__(self):
         return iter(self.states_d.values())
@@ -231,6 +235,7 @@ class Timecourse:
 
         # advance one tick at a time
         this_state = {}
+        trace_fn = self.trace_fn
         for tp in range(start, stop + 1):
             next_state = TissueAndGeneStateAtTime(tissues=tissues, time=tp)
 
@@ -245,10 +250,10 @@ class Timecourse:
 
                         next_active.set_gene_state(gene=g,
                                                    state_info=state_info)
-
+                        if trace_fn:
+                            trace_fn(gene=g, state_info=state_info)
 
                 next_state[t] = next_active
-                #print('fff', t, next_active)
 
             # advance => next state
             self.states_d[tp] = next_state
@@ -261,9 +266,9 @@ class Timecourse:
                 raise DinkumObservationFailed(state.time)
 
 
-def run(start, stop, *, verbose=False):
+def run(start, stop, *, verbose=False, trace_fn=None):
     # run time course
-    tc = Timecourse(start=start, stop=stop)
+    tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
     tc.run(verbose=verbose)
 
     for state in tc:
