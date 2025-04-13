@@ -5,6 +5,7 @@ from dinkum.vfg import Gene
 from dinkum.vfn import Tissue
 from dinkum import Timecourse
 from dinkum import observations
+from dinkum.exceptions import *
 
 
 def test_maternal():
@@ -409,6 +410,7 @@ def test_delayed_activation():
 
 
 def test_delayed_activation_trace():
+    # test trace function
     dinkum.reset()
 
     # set it all up!
@@ -436,3 +438,20 @@ def test_delayed_activation_trace():
     dinkum.run(start=1, stop=5, trace_fn=trace_me)
 
     assert len(x) == 8
+    print(x)
+
+    gene, state_info = x[0]
+    assert gene.name == 'X'
+    assert str(state_info) == '<level=100,active=True>'
+
+
+def test_multiple_rules_error():
+    dinkum.reset()
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    x.activated_by(source=x, delay=2)
+    with pytest.raises(DinkumMultipleRules):
+        x.activated_by(source=y, delay=2)

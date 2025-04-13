@@ -33,7 +33,7 @@ def _add_rule(ix):
     seen = set()
     for r in _rules:
         if r.dest in seen and not r.multiple_allowed:
-            raise DinkumException(f"multiple rules containing {r.dest} are not allowed!")
+            raise DinkumMultipleRules(f"multiple rules containing {r.dest} are not allowed!")
         if not r.multiple_allowed:
             seen.add(r.dest)
 

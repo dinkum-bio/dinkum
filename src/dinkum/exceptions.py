@@ -4,6 +4,9 @@ class DinkumException(Exception):
 class DinkumObservationFailed(DinkumException):
     pass
 
+class DinkumMultipleRules(DinkumException):
+    pass
+
 class DinkumInvalidGene(DinkumException):
     pass
 
