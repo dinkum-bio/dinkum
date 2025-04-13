@@ -12,7 +12,9 @@ receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
 ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
 
 def map_to_color(level, is_receptor, is_ligand, is_active):
-    f = level / 60 + 0.2
+    assert level >= 0
+    assert level <= 100
+    f = (level / 100) * 0.6 + 0.2 # pick out the middle 60%
     if is_ligand:
         color = ligand_cmap(f)
     elif is_receptor:
@@ -227,17 +229,23 @@ class TissueActivityPanel_Draw:
         tissue_name = self.template.tissue_name
 
         for tp in times:
-            for gene in gene_names:
+            for gene_name in gene_names:
                 color = None
 
                 active_color = self.active_color
-                gs = get_gene_state(tissue_name, tp, gene)
-                gene_obj = vfg.get_gene(gene)
+                gs = get_gene_state(tissue_name, tp, gene_name)
+                gene_obj = vfg.get_gene(gene_name)
+
+                # check a few constraints...
+                if gs.level == 0 and gs.active:
+                    raise Exception("what")
+                if not gene_obj.is_receptor and gs.level > 0 and not gs.active:
+                    raise Exception("what 2")
 
                 color = map_to_color(gs.level, gene_obj.is_receptor,
                                      gene_obj.is_ligand, gs.active)
 
-                loc = locations_by_tg.get((tp, gene))
+                loc = locations_by_tg.get((tp, gene_name))
                 if loc:
                     loc.draw(canvas, color)
 
