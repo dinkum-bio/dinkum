@@ -293,7 +293,7 @@ def test_community_effect():
     # neighbors
     m.add_neighbor(neighbor=n)
     n.add_neighbor(neighbor=m)
-    assert n in m.neighbors     # should this be bidirectional? probably. CTB.
+    assert n in m.neighbors
     assert m in n.neighbors
 
     # VFN:

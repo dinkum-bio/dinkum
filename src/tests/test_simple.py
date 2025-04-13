@@ -218,7 +218,7 @@ def test_simple_positive_feedback_old_name_activated_or():
     y = Gene(name='Y')
 
     y.activated_by(source=x)
-    # CTB this is an old name for 'activated_by_or'. Check that it works.
+    # this is an old name for 'activated_by_or'. Check that it works.
     x.activated_or(sources=[a, y])
 
     m = Tissue(name='M')
