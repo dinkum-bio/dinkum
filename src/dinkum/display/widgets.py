@@ -4,6 +4,27 @@ __all__ = ["MultiTissuePanel",
 from .draw_ipycanvas import IpycanvasDrawer
 from .draw_pillow import PillowDrawer
 from dinkum import vfg
+import matplotlib
+
+gene_cmap = matplotlib.colormaps.get_cmap('Blues')
+#receptor_off_cmap = matplotlib.colormaps.get_cmap('Reds')
+receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
+ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
+
+def map_to_color(level, is_receptor, is_ligand, is_active):
+    f = level / 60 + 0.2
+    if is_ligand:
+        color = ligand_cmap(f)
+    elif is_receptor:
+        if is_active:
+            color = receptor_on_cmap(f)
+        else:
+            color = receptor_off_cmap(f)
+    else:
+        color = gene_cmap(f)
+    color = tuple([ int(x * 255) for x in color ])
+    return color
+
 
 class MultiTissuePanel:
     """
@@ -212,19 +233,9 @@ class TissueActivityPanel_Draw:
                 active_color = self.active_color
                 gs = get_gene_state(tissue_name, tp, gene)
                 gene_obj = vfg.get_gene(gene)
-                if gene_obj.is_receptor:
-                    active_color = self.active_receptor_color
 
-                if gs.active:
-                    color = active_color
-                elif gs.level > 0:
-                    f = gs.level / 1000 # MAX_LEVEL @CTB
-                    mask = self.present_mask
-                    mask = tuple([ int(i * f) for i in mask ])
-                    color = [ int(i+j) for (i, j) in zip(self.present_color, mask) ]
-                    color = tuple(color)
-                else:
-                    color = self.inactive_color
+                color = map_to_color(gs.level, gene_obj.is_receptor,
+                                     gene_obj.is_ligand, gs.active)
 
                 loc = locations_by_tg.get((tp, gene))
                 if loc:

@@ -437,6 +437,7 @@ class Interaction_Arbitrary(Interactions):
 
 class Gene:
     is_receptor = False
+    is_ligand = False
     is_tf = True
 
     def __init__(self, *, name=None):
@@ -514,6 +515,7 @@ class Gene:
 
 class Ligand(Gene):
     is_tf = False
+    is_ligand = True
 
     def __init__(self, *, name=None, is_juxtacrine=False):
         super().__init__(name=name)
