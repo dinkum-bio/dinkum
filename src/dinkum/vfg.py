@@ -283,9 +283,6 @@ class Interaction_And(Interactions):
         self.sources = sources
         self.dest = dest
         self.delay = delay
-        for tf in self.sources:
-            if not tf.is_tf:
-                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         for src in self.sources:
@@ -319,8 +316,6 @@ class Interaction_ToggleRepressed(Interactions):
         check_is_valid_gene(cofactor)
 
         self.tf = tf
-        if not self.tf.is_tf:
-            raise DinkumNotATranscriptionFactor(self.tf.name)
         self.cofactor = cofactor
         self.dest = dest
         self.delay = delay
