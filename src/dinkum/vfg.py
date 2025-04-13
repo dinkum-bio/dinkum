@@ -48,7 +48,7 @@ def get_gene(name):
     for g in sorted(_genes):
         if g.name == name:
             return g
-    raise Exception(f"unknown genome name: '{name}'")
+    raise DinkumInvalidGene(f"unknown genome name: '{name}'")
 
 def reset():
     global _rules
@@ -402,14 +402,9 @@ class Interaction_Arbitrary(Interactions):
         dep_gene_names = self._get_gene_names(state_fn)
         for name in dep_gene_names:
             found = False
-            for g in _genes:
-                if g.name == name:
-                    check_is_tf(g)
-                    dep_genes.append((name, g))
-                    found = True
-                    break
-            if not found:
-                raise DinkumInvalidGene(name)
+            g = get_gene(name)
+            check_is_tf(g)
+            dep_genes.append((name, g))
 
         return dep_genes
 
