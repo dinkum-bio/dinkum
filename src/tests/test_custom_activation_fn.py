@@ -130,6 +130,27 @@ def test_custom_bad_defn():
         y.custom_activation(state_fn=activator_fn, delay=1)
 
 
+def test_custom_fail_bad_return():
+    # basic does-it-work - test bad return value
+    set_debug(True)
+
+    dinkum.reset()
+
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    m = Tissue(name='M')
+
+    def activator_fn(*, X):     # allow order independence
+        return 100, False, "something else"
+
+    x.is_present(where=m, start=1, duration=1)
+    y.custom_activation(state_fn=activator_fn, delay=1)
+
+    # run time course; expect error
+    with pytest.raises(DinkumInvalidActivationResult):
+        dinkum.run(1, 5)
+
+
 def test_custom_class_1():
     # does it work with a custom class? give a list of gene names
     set_debug(True)
