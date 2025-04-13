@@ -75,9 +75,10 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     for gene in _genes:
         if gene._is_ligand:
             for neighbor in tissue.neighbors:
-                # for neighbor in (tissue, *tissue.neighbors):@CTB
                 if states.is_active(timepoint, delay, gene, neighbor):
                     is_juxtacrine = getattr(gene, 'is_juxtacrine', False)
+
+                    # if it's juxtacrine, it only activates other, not self.
                     if is_juxtacrine:
                         if neighbor != tissue:
                             ligands.add(gene)
@@ -428,7 +429,6 @@ class Interaction_Arbitrary(Interactions):
             level, is_active = result
 
             if is_active:
-                # @CTB ...check ligand should be made more general...
                 is_active = self.check_ligand(timepoint,
                                               states,
                                               tissue,
@@ -538,13 +538,3 @@ class Receptor(Gene):
 
     def __repr__(self):
         return f"Receptor('{self.name}')"
-
-    def activated_by(self, *, activator=None, source=None, delay=1):
-        if activator is None:   # @CTB deprecated
-            # assert 0
-            activator = source
-        if activator is None:
-            raise Exception("must supply an activator!")
-
-        ix = Interaction_Activates(source=source, dest=self, delay=delay)
-        _add_rule(ix)
