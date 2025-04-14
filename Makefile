@@ -1,4 +1,4 @@
-.PHONY: dist
+.PHONY: dist nbconvert
 
 all:
 	./simple.py
@@ -17,6 +17,14 @@ nbtest:
 	py.test --nbval-lax notebooks/6-decay-example.ipynb --current-env
 	py.test --nbval-lax notebooks/6-multi-level-activation.ipynb --current-env
 	py.test --nbval-lax notebooks/9-advanced-examples.ipynb --current-env
+
+nbconvert:
+	cd notebooks && \
+	   rm -f *.nbconvert.ipynb && \
+	   jupyter nbconvert --to notebook --execute [0-9]-*.ipynb --allow-errors
+
+update_notebooks: 
+	cd notebooks && for i in *.nbconvert.ipynb; do mv $$i $$(basename $$i .nbconvert.ipynb).ipynb; done
 
 install-dev:
 	python -m pip install -e .
