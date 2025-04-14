@@ -1,9 +1,12 @@
+"Generate basic activity recording."
+
 from .widgets import *
 
 from .. import Timecourse
 
-def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False):
-    tc = Timecourse(start=start, stop=stop)
+def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
+                       trace_fn=None):
+    tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
 
     state_record = []     # (tp_name, state)
 
@@ -12,6 +15,7 @@ def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False):
 
     tc.run()
 
+    # iterate over timecourses, pulling out state information.
     for n, state in enumerate(iter(tc)):
         tp = f"t={state.time}"
         if verbose:

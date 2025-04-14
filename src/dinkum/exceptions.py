@@ -4,10 +4,16 @@ class DinkumException(Exception):
 class DinkumObservationFailed(DinkumException):
     pass
 
+class DinkumMultipleRules(DinkumException):
+    pass
+
 class DinkumInvalidGene(DinkumException):
     pass
 
 class DinkumNotATranscriptionFactor(DinkumException):
+    pass
+
+class DinkumNotALigand(DinkumException):
     pass
 
 class DinkumInvalidTissue(DinkumException):

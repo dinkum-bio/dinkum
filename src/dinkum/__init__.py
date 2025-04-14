@@ -1,5 +1,7 @@
 """
-Top-level dinkum module
+Top-level dinkum module.
+
+Contains core execution information.
 """
 import sys
 from importlib.metadata import version
@@ -26,7 +28,7 @@ def reset(*, verbose=True):
 
 
 def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
-                       verbose=False, save_image=None):
+                       verbose=False, save_image=None, trace_fn=None):
     """
     Run and display the circuit model.
 
@@ -52,7 +54,8 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
             tc_record_activity(start=start,
                                stop=stop,
                                gene_names=gene_names,
-                               verbose=verbose)
+                               verbose=verbose,
+                               trace_fn=trace_fn)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
@@ -86,6 +89,13 @@ class GeneStates:
         assert gene is not None
         assert state_info is not None
         self.genes_by_name[gene.name] = state_info
+
+    def is_present(self, gene_name):
+        state_info = self.genes_by_name.get(gene_name)
+        if state_info is None or state_info.level == 0:
+            return False
+
+        return True
 
     def is_active(self, gene_name):
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
@@ -202,7 +212,7 @@ class Timecourse:
     """
     Run a time course for a system b/t two time points, start and stop.
     """
-    def __init__(self, *, start=None, stop=None):
+    def __init__(self, *, start=None, stop=None, trace_fn=None):
         assert start is not None
         assert stop is not None
 
@@ -211,6 +221,7 @@ class Timecourse:
         self.start = start
         self.stop = stop
         self.states_d = TissueGeneStates()
+        self.trace_fn = trace_fn
 
     def __iter__(self):
         return iter(self.states_d.values())
@@ -231,24 +242,26 @@ class Timecourse:
 
         # advance one tick at a time
         this_state = {}
+        trace_fn = self.trace_fn
         for tp in range(start, stop + 1):
             next_state = TissueAndGeneStateAtTime(tissues=tissues, time=tp)
 
-            for t in tissues:
+            for tissue in tissues:
                 seen = set()
                 next_active = GeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for g, state_info in r.advance(timepoint=tp,
-                                                   states=self.states_d,
-                                                   tissue=t):
+                    for gene, state_info in r.advance(timepoint=tp,
+                                                      states=self.states_d,
+                                                      tissue=tissue):
 
-                        next_active.set_gene_state(gene=g,
+                        next_active.set_gene_state(gene=gene,
                                                    state_info=state_info)
+                        if trace_fn:
+                            trace_fn(tp=tp, tissue=tissue,
+                                     gene=gene, state_info=state_info)
 
-
-                next_state[t] = next_active
-                #print('fff', t, next_active)
+                next_state[tissue] = next_active
 
             # advance => next state
             self.states_d[tp] = next_state
@@ -261,9 +274,9 @@ class Timecourse:
                 raise DinkumObservationFailed(state.time)
 
 
-def run(start, stop, *, verbose=False):
+def run(start, stop, *, verbose=False, trace_fn=None):
     # run time course
-    tc = Timecourse(start=start, stop=stop)
+    tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
     tc.run(verbose=verbose)
 
     for state in tc:
@@ -296,7 +309,7 @@ def convert_states_to_dataframe(states, gene_names, get_state_fn):
             level_rows.append(level_d)
             active_rows.append(active_d)
 
-    level_df = pd.DataFrame.from_dict(level_rows)
-    active_df = pd.DataFrame.from_dict(active_rows)
+    level_df = pd.DataFrame.from_dict(level_rows).set_index('timepoint')
+    active_df = pd.DataFrame.from_dict(active_rows).set_index('timepoint')
 
     return level_df, active_df

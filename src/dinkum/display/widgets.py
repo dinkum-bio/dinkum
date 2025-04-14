@@ -4,6 +4,29 @@ __all__ = ["MultiTissuePanel",
 from .draw_ipycanvas import IpycanvasDrawer
 from .draw_pillow import PillowDrawer
 from dinkum import vfg
+import matplotlib
+
+gene_cmap = matplotlib.colormaps.get_cmap('Blues')
+receptor_off_cmap = matplotlib.colormaps.get_cmap('Reds')
+receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
+ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
+
+def map_to_color(level, is_receptor, is_ligand, is_active):
+    assert level >= 0
+    assert level <= 100
+    f = (level / 100) * 0.6 + 0.2 # pick out the middle 60%
+    if is_ligand:
+        color = ligand_cmap(f)
+    elif is_receptor:
+        if is_active:
+            color = receptor_on_cmap(f)
+        else:
+            color = receptor_off_cmap(f)
+    else:
+        color = gene_cmap(f)
+    color = tuple([ int(x * 255) for x in color ])
+    return color
+
 
 class MultiTissuePanel:
     """
@@ -206,27 +229,24 @@ class TissueActivityPanel_Draw:
         tissue_name = self.template.tissue_name
 
         for tp in times:
-            for gene in gene_names:
+            for gene_name in gene_names:
                 color = None
 
                 active_color = self.active_color
-                gs = get_gene_state(tissue_name, tp, gene)
-                gene_obj = vfg.get_gene(gene)
-                if gene_obj.is_receptor:
-                    active_color = self.active_receptor_color
+                gs = get_gene_state(tissue_name, tp, gene_name)
+                gene_obj = vfg.get_gene(gene_name)
 
-                if gs.active:
-                    color = active_color
-                elif gs.level > 0:
-                    f = gs.level / 1000 # MAX_LEVEL @CTB
-                    mask = self.present_mask
-                    mask = tuple([ int(i * f) for i in mask ])
-                    color = [ int(i+j) for (i, j) in zip(self.present_color, mask) ]
-                    color = tuple(color)
-                else:
-                    color = self.inactive_color
+                # check a few constraints...
+                if gs.level == 0 and gs.active:
+                    print(f"WARNING: at time {tp} gene {gene_name} has level == 0 but is active! Is this intentional??")
+                if not gene_obj.is_receptor and gs.level > 0 and not gs.active:
+                    print(F"WARNING: at time {tp} gene {gene_name} has level {gs.level} but is not active! Is this intentional??")
+                    raise Exception("what 2")
 
-                loc = locations_by_tg.get((tp, gene))
+                color = map_to_color(gs.level, gene_obj.is_receptor,
+                                     gene_obj.is_ligand, gs.active)
+
+                loc = locations_by_tg.get((tp, gene_name))
                 if loc:
                     loc.draw(canvas, color)
 

@@ -5,6 +5,7 @@ from dinkum.vfg import Gene
 from dinkum.vfn import Tissue
 from dinkum import Timecourse
 from dinkum import observations
+from dinkum.exceptions import *
 
 
 def test_maternal():
@@ -217,7 +218,7 @@ def test_simple_positive_feedback_old_name_activated_or():
     y = Gene(name='Y')
 
     y.activated_by(source=x)
-    # CTB this is an old name for 'activated_by_or'. Check that it works.
+    # this is an old name for 'activated_by_or'. Check that it works.
     x.activated_or(sources=[a, y])
 
     m = Tissue(name='M')
@@ -407,3 +408,57 @@ def test_delayed_activation():
     # run!
     dinkum.run(start=1, stop=5)
 
+
+def test_delayed_activation_trace():
+    # test trace function
+    dinkum.reset()
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    y.activated_by(source=x, delay=2)
+
+    m = Tissue(name='M')
+    x.is_present(where=m, start=1)
+
+    # set observations
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+
+    x = []
+    def trace_me(*, gene=None, state_info=None, tp=None, tissue=None):
+        assert gene is not None
+        assert state_info is not None
+        assert tp is not None
+        assert tissue is not None
+
+        x.append((gene, state_info, tp, tissue))
+
+    # run!
+    dinkum.run(start=1, stop=5, trace_fn=trace_me)
+
+    assert len(x) == 8
+    print(x)
+
+    gene, state_info, tp, tissue = x[0]
+    assert gene.name == 'X'
+    assert str(state_info) == '<level=100,active=True>'
+    assert tissue.name == 'M'
+    assert tp == 1
+
+
+def test_multiple_rules_error():
+    dinkum.reset()
+
+    # set it all up!
+    x = Gene(name='X')
+    y = Gene(name='Y')
+
+    x.activated_by(source=x, delay=2)
+    with pytest.raises(DinkumMultipleRules):
+        x.activated_by(source=y, delay=2)

@@ -33,7 +33,7 @@ def _add_rule(ix):
     seen = set()
     for r in _rules:
         if r.dest in seen and not r.multiple_allowed:
-            raise DinkumException(f"multiple rules containing {r.dest} are not allowed!")
+            raise DinkumMultipleRules(f"multiple rules containing {r.dest} are not allowed!")
         if not r.multiple_allowed:
             seen.add(r.dest)
 
@@ -48,7 +48,7 @@ def get_gene(name):
     for g in sorted(_genes):
         if g.name == name:
             return g
-    raise Exception(f"unknown genome name: '{name}'")
+    raise DinkumInvalidGene(f"unknown genome name: '{name}'")
 
 def reset():
     global _rules
@@ -75,9 +75,10 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     for gene in _genes:
         if gene._is_ligand:
             for neighbor in tissue.neighbors:
-                # for neighbor in (tissue, *tissue.neighbors):@CTB
                 if states.is_active(timepoint, delay, gene, neighbor):
                     is_juxtacrine = getattr(gene, 'is_juxtacrine', False)
+
+                    # if it's juxtacrine, it only activates other, not self.
                     if is_juxtacrine:
                         if neighbor != tissue:
                             ligands.add(gene)
@@ -246,9 +247,6 @@ class Interaction_AndNot(Interactions):
         self.repressor = repressor
         self.dest = dest
         self.delay = delay
-        for tf in (self.src, self.repressor):
-            if not tf.is_tf:
-                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         yield [self.dest, self.src, "positive"]
@@ -286,9 +284,6 @@ class Interaction_And(Interactions):
         self.sources = sources
         self.dest = dest
         self.delay = delay
-        for tf in self.sources:
-            if not tf.is_tf:
-                raise DinkumNotATranscriptionFactor(tf.name)
 
     def btp_autonomous_links(self):
         for src in self.sources:
@@ -322,8 +317,6 @@ class Interaction_ToggleRepressed(Interactions):
         check_is_valid_gene(cofactor)
 
         self.tf = tf
-        if not self.tf.is_tf:
-            raise DinkumNotATranscriptionFactor(self.tf.name)
         self.cofactor = cofactor
         self.dest = dest
         self.delay = delay
@@ -402,14 +395,9 @@ class Interaction_Arbitrary(Interactions):
         dep_gene_names = self._get_gene_names(state_fn)
         for name in dep_gene_names:
             found = False
-            for g in _genes:
-                if g.name == name:
-                    check_is_tf(g)
-                    dep_genes.append((name, g))
-                    found = True
-                    break
-            if not found:
-                raise DinkumInvalidGene(name)
+            g = get_gene(name)
+            check_is_tf(g)
+            dep_genes.append((name, g))
 
         return dep_genes
 
@@ -429,19 +417,16 @@ class Interaction_Arbitrary(Interactions):
         result = self.state_fn(**dep_state)
         if result is not None:
             if not isinstance(result, GeneStateInfo):
-                try:
-                    if len(tuple(result)) == 2:
-                        result = GeneStateInfo(int(result[0]), bool(result[1]))
-                except:
-                    pass
+                if len(tuple(result)) == 2:
+                    result = GeneStateInfo(int(result[0]), bool(result[1]))
+
             if not isinstance(result, GeneStateInfo):
-                raise DinkumInvalidActivationResult(f"result '{result}' of custom activation function is not a GeneStateInfo tuple (and cannot be converted)")
+                raise DinkumInvalidActivationResult(f"result '{result}' of custom activation function '{self.state_fn.__name__}' is not a GeneStateInfo tuple (and cannot be converted)")
 
         if result is not None:
             level, is_active = result
 
             if is_active:
-                # @CTB ...check ligand should be made more general...
                 is_active = self.check_ligand(timepoint,
                                               states,
                                               tissue,
@@ -452,6 +437,7 @@ class Interaction_Arbitrary(Interactions):
 
 class Gene:
     is_receptor = False
+    is_ligand = False
     is_tf = True
 
     def __init__(self, *, name=None):
@@ -461,7 +447,6 @@ class Gene:
         self.name = name
 
         _genes.append(self)
-        self._set_ligand = None
         self._is_ligand = None
 
     def __repr__(self):
@@ -482,12 +467,9 @@ class Gene:
     def present(self):
         return 1
 
-    def ligand_present(self):
-        return (self._set_ligand is None) or 1 # @CTB
-
     def active(self):           # present = active
         if self._is_ligand:
-            return self.present() and self.ligand_present()
+            return self.present() and self._set_ligand
         else:
             return self.present()
 
@@ -533,6 +515,7 @@ class Gene:
 
 class Ligand(Gene):
     is_tf = False
+    is_ligand = True
 
     def __init__(self, *, name=None, is_juxtacrine=False):
         super().__init__(name=name)
@@ -550,31 +533,8 @@ class Receptor(Gene):
         super().__init__(name=name)
         assert name
         self._set_ligand = ligand
-        if ligand:
-            ligand._is_ligand = True
+        if ligand and not isinstance(ligand, Ligand):
+            raise DinkumNotALigand(f"gene {ligand.name} is not a Ligand")
 
     def __repr__(self):
         return f"Receptor('{self.name}')"
-
-    def ligand(self, *, activator=None, ligand=None):
-        # assert 0, "legacy method!"
-        # @CTB legacy
-        if ligand is None:
-            ligand = self._set_ligand
-            if ligand is None:
-                raise Exception("need to specify a ligand for this receptor, either at creation or here")
-        else:
-            ligand._is_ligand = True
-
-        ix = Interaction_Activates(source=activator, dest=self, delay=1)
-        _add_rule(ix)
-
-    def activated_by(self, *, activator=None, source=None, delay=1):
-        if activator is None:   # @CTB deprecated
-            # assert 0
-            activator = source
-        if activator is None:
-            raise Exception("must supply an activator!")
-
-        ix = Interaction_Activates(source=source, dest=self, delay=delay)
-        _add_rule(ix)
