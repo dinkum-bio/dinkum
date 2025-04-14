@@ -309,7 +309,7 @@ def convert_states_to_dataframe(states, gene_names, get_state_fn):
             level_rows.append(level_d)
             active_rows.append(active_d)
 
-    level_df = pd.DataFrame.from_dict(level_rows)
-    active_df = pd.DataFrame.from_dict(active_rows)
+    level_df = pd.DataFrame.from_dict(level_rows).set_index('timepoint')
+    active_df = pd.DataFrame.from_dict(active_rows).set_index('timepoint')
 
     return level_df, active_df
