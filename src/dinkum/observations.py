@@ -63,7 +63,6 @@ class Obs_IsNotPresent(Observation):
             return None
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
-        print('ZZZ', tissue_state)
         return not tissue_state.is_present(gene_name=self.gene_name)
 
     def render(self):
