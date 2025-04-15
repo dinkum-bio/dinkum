@@ -104,6 +104,9 @@ class CustomActivation(object):
 
         self.input_genes = list(input_genes)
 
+    def __call__(self, *args, **kw):
+        raise NotImplementedError
+
 
 class Interactions:
     multiple_allowed = False
@@ -411,8 +414,15 @@ class Interaction_Arbitrary(Interactions):
 
         # pass in their full GeneStateInfo
         delay = self.delay
-        dep_state = { name: states.get_gene_state_info(timepoint, delay, g, tissue)
-                      for (name, g) in dep_genes }
+
+        dep_state = {}
+        for name, gene in dep_genes:
+            gene_state = states.get_gene_state_info(timepoint, delay,
+                                                    gene, tissue)
+            if gene_state is None:
+                gene_state = DEFAULT_OFF
+
+            dep_state[name] = gene_state
 
         result = self.state_fn(**dep_state)
         if result is not None:
