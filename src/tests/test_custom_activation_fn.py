@@ -40,6 +40,38 @@ def test_custom_fn_1():
     assert len(tc) == 5
 
 
+def test_custom_fn_1_delay_2():
+    # basic does-it-work
+    dinkum.reset()
+
+    x = Gene(name='X')
+    y = Gene(name='Y')
+    m = Tissue(name='M')
+
+    def activator_fn(*, X):
+        if X.level == 0 or not X.active:
+            assert bool(X) == False
+        return X
+
+    x.is_present(where=m, start=1, duration=2)
+    y.custom_activation(state_fn=activator_fn, delay=2)
+
+    # set observations
+    observations.check_is_present(gene='X', time=1, tissue='M')
+    observations.check_is_present(gene='X', time=2, tissue='M')
+    observations.check_is_not_present(gene='X', time=3, tissue='M')
+
+    observations.check_is_not_present(gene='Y', time=1, tissue='M')
+    observations.check_is_not_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene='Y', time=3, tissue='M')
+    observations.check_is_present(gene='Y', time=4, tissue='M')
+    observations.check_is_not_present(gene='Y', time=5, tissue='M')
+
+    # run time course
+    tc = dinkum.run(1, 5)
+    assert len(tc) == 5
+
+
 def test_custom_fn_2():
     set_debug(True)
 
