@@ -119,14 +119,12 @@ class Interactions:
 
     def check_ligand(self, timepoint, states, tissue, delay):
         if getattr(self.dest, '_set_ligand', None):
-            #print(self.dest, "is a receptor w/ a ligand")
             ligands_in_neighbors = _retrieve_ligands(timepoint, states,
                                                      tissue, delay)
             if self.dest._set_ligand in ligands_in_neighbors:
                 return True
             return False
         else:
-            #print(self.dest, "is not a receptor")
             return True         # by default, not ligand => is active
 
 

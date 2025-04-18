@@ -12,8 +12,8 @@ receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
 ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
 
 def map_to_color(level, is_receptor, is_ligand, is_active):
-    assert level >= 0
-    assert level <= 100
+    assert level >= 0, level
+    assert level <= 100, level
     f = (level / 100) * 0.6 + 0.2 # pick out the middle 60%
     if is_ligand:
         color = ligand_cmap(f)

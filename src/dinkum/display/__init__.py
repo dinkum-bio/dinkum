@@ -14,6 +14,7 @@ def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
     all_tissues = set()   # all tissues across all time points
 
     tc.run()
+    tc.check()
 
     # iterate over timecourses, pulling out state information.
     for n, state in enumerate(iter(tc)):
