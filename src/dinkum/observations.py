@@ -164,6 +164,42 @@ def check_is_not_active(*, gene=None, time=None, tissue=None):
     _add_obs(ob)
 
 
+class Obs_LevelIsBetween(Observation):
+    def __init__(self, *, gene=None, time=None, tissue=None,
+                 min_level=None, max_level=None):
+        assert gene
+        assert time is not None
+        assert tissue is not None
+        assert min_level is not None
+        assert max_level is not None
+        self.gene_name = gene
+        self.time = time
+        self.tissue_name = tissue
+        self.min_level = min_level
+        self.max_level = max_level
+
+    def check(self, state):
+        # not applicable
+        if state.time != self.time:
+            return None
+
+        tissue_state = state.get_by_tissue_name(self.tissue_name)
+        level = tissue_state.get_level(self.gene_name)
+        print('xxx', level)
+        if level >= self.min_level and level <= self.max_level:
+            return True
+        return False
+
+    def render(self):
+        return f"{self.gene_name} has level NOT between {self.min_level} and {self.max_level} in tissue {self.tissue_name} at time {self.time}"
+
+
+def check_level_is_between(*, gene=None, time=None, tissue=None,
+                           min_level=None, max_level=None):
+    ob = Obs_LevelIsBetween(gene=gene, time=time, tissue=tissue,
+                            min_level=min_level, max_level=max_level)
+    _add_obs(ob)
+
 
 def test_observations(state):
     succeed = True

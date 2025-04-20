@@ -405,7 +405,7 @@ class Interaction_Custom(Interactions):
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # 'states' is class States...
         if not states:
-            assert 0            # what is this if for??
+#            assert 0            # what is this if for??
             return
 
         assert tissue

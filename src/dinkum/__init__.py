@@ -116,11 +116,9 @@ class GeneStates:
     def report_activity(self):
         rl = []
         for k, v in sorted(self.genes_by_name.items()):
-            if v:
-                v = 1
-            else:
-                v = 0
-            rl.append(f"{k}={v}")
+            level = v.level
+            active = 1 if v.active else 0
+            rl.append(f"{k}={level} ({active})")
 
         return rl
 
