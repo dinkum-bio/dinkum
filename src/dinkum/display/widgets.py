@@ -12,8 +12,13 @@ receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
 ligand_cmap = matplotlib.colormaps.get_cmap('Purples')
 
 def map_to_color(level, is_receptor, is_ligand, is_active):
-    assert level >= 0, level
-    assert level <= 100, level
+    if level < 0:
+        print(f"warning: level is too small: {level}")
+        level = 0
+    if level > 100:
+        print(f"warning: level is too big: {level}")
+        level = 100
+
     f = (level / 100) * 0.6 + 0.2 # pick out the middle 60%
     if is_ligand:
         color = ligand_cmap(f)

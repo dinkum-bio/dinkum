@@ -88,7 +88,7 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     return ligands
 
 
-class CustomActivation(object):
+class CustomActivation:
     def __init__(self, *, input_genes=None):
         # only support explicit kwargs on __call__,
         # because otherwise we are a bit
@@ -351,7 +351,7 @@ class Interaction_ToggleRepressed(Interactions):
             yield self.dest, GeneStateInfo(level=100, active=is_active)
 
 
-class Interaction_Arbitrary(Interactions):
+class Interaction_Custom(Interactions):
     """
     An interaction that supports arbitrary logic, + levels.
     """
@@ -405,6 +405,7 @@ class Interaction_Arbitrary(Interactions):
     def advance(self, *, timepoint=None, states=None, tissue=None):
         # 'states' is class States...
         if not states:
+            assert 0            # what is this if for??
             return
 
         assert tissue
@@ -441,6 +442,33 @@ class Interaction_Arbitrary(Interactions):
                                               self.delay)
 
             yield self.dest, GeneStateInfo(level, is_active)
+
+
+class Interaction_Custom2(Interactions):
+    """
+    An interaction that supports even more powerful arbitrary logic & levels.
+    """
+    def __init__(self, *, dest=None, obj=None):
+        assert dest is not None
+        assert obj is not None
+        self.dest = dest
+        self.obj = obj
+
+    def btp_autonomous_links(self):
+        return []
+
+    def btp_signal_links(self):
+        return []
+
+    def advance(self, *, timepoint=None, states=None, tissue=None):
+        assert tissue
+
+        result = self.obj.advance(timepoint, states, tissue)
+        if result is not None:
+            target, gsi = result
+            if not isinstance(gsi, GeneStateInfo):
+                raise DinkumInvalidActivationResult(f"result '{result}' of custom2 activation function '{self.obj} is not a GeneStateInfo tuple")
+            yield target, gsi
 
 
 class Gene:
@@ -517,7 +545,12 @@ class Gene:
         _add_rule(ix)
 
     def custom_activation(self, *, state_fn=None, delay=1):
-        ix = Interaction_Arbitrary(dest=self, state_fn=state_fn, delay=delay)
+        ix = Interaction_Custom(dest=self, state_fn=state_fn, delay=delay)
+        _add_rule(ix)
+
+    def custom2(self, obj):
+        obj.set_gene(self)
+        ix = Interaction_Custom2(dest=self, obj=obj)
         _add_rule(ix)
 
 

@@ -106,6 +106,7 @@ class GeneStates:
         return state_info.level
 
     def get_gene_state(self, gene_name):
+        assert not isinstance(gene_name, vfg.Gene)
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
         return state_info
 
@@ -156,6 +157,7 @@ class TissueAndGeneStateAtTime:
         return self._tissues_by_name[tissue.name]
 
     def get_by_tissue_name(self, tissue_name):
+        assert not isinstance(tissue_name, vfn.Tissue)
         return self._tissues_by_name[tissue_name]
 
     @property
@@ -222,6 +224,9 @@ class Timecourse:
         self.stop = stop
         self.states_d = TissueGeneStates()
         self.trace_fn = trace_fn
+
+    def reset(self):
+        self.states_d = TissueGeneStates()
 
     def __iter__(self):
         return iter(self.states_d.values())
