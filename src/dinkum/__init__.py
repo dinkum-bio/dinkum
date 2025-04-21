@@ -226,6 +226,9 @@ class Timecourse:
     def reset(self):
         self.states_d = TissueGeneStates()
 
+    def keys(self):
+        return self.states_d.keys()
+
     def __iter__(self):
         return iter(self.states_d.values())
 
@@ -275,6 +278,12 @@ class Timecourse:
         for state in iter(self):
             if not observations.test_observations(state):
                 raise DinkumObservationFailed(state.time)
+
+    def get_gene_state(self, tp, tissue_name, gene_name):
+        time_state = self.states_d[tp]
+        tissue_state = time_state.get_by_tissue_name(tissue_name)
+        gene_state = tissue_state.get_gene_state(gene_name)
+        return gene_state
 
 
 def run(start, stop, *, verbose=False, trace_fn=None):

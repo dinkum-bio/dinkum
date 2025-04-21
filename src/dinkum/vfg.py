@@ -48,7 +48,7 @@ def get_gene(name):
     for g in sorted(_genes):
         if g.name == name:
             return g
-    raise DinkumInvalidGene(f"unknown genome name: '{name}'")
+    raise DinkumInvalidGene(f"unknown gene name: '{name}'")
 
 def reset():
     global _rules

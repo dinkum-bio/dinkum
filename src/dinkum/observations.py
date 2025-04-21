@@ -185,7 +185,6 @@ class Obs_LevelIsBetween(Observation):
 
         tissue_state = state.get_by_tissue_name(self.tissue_name)
         level = tissue_state.get_level(self.gene_name)
-        print('xxx', level)
         if level >= self.min_level and level <= self.max_level:
             return True
         return False
