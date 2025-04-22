@@ -1,5 +1,6 @@
 import numpy as np
 from lmfit import minimize, Parameters
+import math
 
 from dinkum import vfg, Timecourse
 from dinkum.vfg import GeneStateInfo
@@ -122,7 +123,7 @@ class GeneTimecourse:
 
 class LinearCombination:
     def __init__(self, *, weights=None, gene_names, delay=1):
-        self.weights = weights # CTB: use dict?
+        self.weights = weights
         self.gene_names = list(gene_names)
         self.delay = delay
 
@@ -180,6 +181,56 @@ class LinearCombination:
         return self.target, GeneStateInfo(output, True)
 
 
+class LogisticFunction:
+    def __init__(self, *, rate=1, midpoint=50, upstream_name=None, delay=1):
+        assert upstream_name is not None
+        self.rate = rate
+        self.midpoint = midpoint
+        self.upstream_name = upstream_name
+        self.delay = delay
+
+    def get_params(self):
+        target_name = self.target.name
+        rate = self.rate
+        midpoint = self.midpoint
+
+        param_name = f'{target_name}_rate'
+        yield param_name, rate
+
+        param_name = f'{target_name}_midpoint'
+        yield param_name, midpoint
+
+    def set_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f'{target_name}_rate'
+        self.rate = params_obj[param_name].value
+
+        param_name = f'{target_name}_midpoint'
+        self.midpoint = params_obj[param_name].value
+
+    def set_gene(self, gene):
+        self.target = gene
+
+    def advance(self, timepoint, states, tissue):
+        delay = self.delay
+
+        gene = vfg.get_gene(self.upstream_name)
+        gsi = states.get_gene_state_info(timepoint, delay, gene, tissue)
+
+        if gsi is not None:
+            input_level = gsi.level
+        else:
+            input_level = 0
+
+        # calc logistic function
+        expon = -self.rate * (input_level - self.midpoint)
+        denom = 1 + math.exp(expon)
+        level = round(100 / denom)
+
+        return self.target, GeneStateInfo(level, True)
+
+
 def run_lmfit(start, stop, fit_values, fit_genes):
     for g in fit_genes:
         assert isinstance(g, vfg.Gene)
@@ -228,3 +279,5 @@ def run_lmfit(start, stop, fit_values, fit_genes):
     params = get_fit_params()
     res = minimize(residual, params, args=(times, fit_values))
     set_fit_params(res.params)
+
+    print('final fit params:', res.params)
