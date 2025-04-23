@@ -6,6 +6,8 @@ from .draw_pillow import PillowDrawer
 from dinkum import vfg
 import matplotlib
 
+EMIT_WARNINGS = False
+
 gene_cmap = matplotlib.colormaps.get_cmap('Blues')
 receptor_off_cmap = matplotlib.colormaps.get_cmap('Reds')
 receptor_on_cmap = matplotlib.colormaps.get_cmap('YlGn')
@@ -242,9 +244,9 @@ class TissueActivityPanel_Draw:
                 gene_obj = vfg.get_gene(gene_name)
 
                 # check a few constraints...
-                if gs.level == 0 and gs.active:
+                if gs.level == 0 and gs.active and EMIT_WARNINGS:
                     print(f"WARNING: at time {tp} gene {gene_name} has level == 0 but is active! Is this intentional??")
-                if not gene_obj.is_receptor and gs.level > 0 and not gs.active:
+                if not gene_obj.is_receptor and gs.level > 0 and not gs.active and EMIT_WARNINGS:
                     print(F"WARNING: at time {tp} gene {gene_name} has level {gs.level} but is not active! Is this intentional??")
                     raise Exception("what 2")
 
