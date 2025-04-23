@@ -1,4 +1,6 @@
 import pytest
+from lmfit import Parameters
+
 import dinkum
 from dinkum.exceptions import DinkumInvalidGene
 from dinkum.vfg import Gene
@@ -196,7 +198,8 @@ def test_fit():
 
     run_lmfit(1, 5, fit_values, [o])
 
-    d = dict(linear_combination.get_params())
-    assert round(d['out_wX'], 2) == 1.00
-    assert round(d['out_wY'], 2) == 0.00
-    assert round(d['out_wZ'], 2) == -0.01
+    p = Parameters()
+    linear_combination.get_params(p)
+    assert round(p['out_wX'].value, 2) == 1.00
+    assert round(p['out_wY'].value, 2) == 0.00
+    assert round(p['out_wZ'].value, 2) == -0.01

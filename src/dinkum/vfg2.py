@@ -5,6 +5,8 @@ import math
 from dinkum import vfg, Timecourse
 from dinkum.vfg import GeneStateInfo
 
+# @CTB prevent set_gene from being called multiple times
+
 
 class Decay:
     def __init__(self, *, start_time, rate, initial_level, tissue):
@@ -14,14 +16,14 @@ class Decay:
         self.tissue = tissue
         self.level = None
 
-    def get_params(self):
+    def get_params(self, params_obj):
         target_name = self.target.name
         decay_name = f'{target_name}_decay'
         initial_name = f'{target_name}_initial'
 
-        yield decay_name, self.rate
-        yield initial_name, self.initial_level
-        
+        params_obj.add(decay_name, value=self.rate)
+        params_obj.add(initial_name, value=self.initial_level)
+
     def set_params(self, params_obj):
         target_name = self.target.name
         decay_name = f'{target_name}_decay'
@@ -54,13 +56,13 @@ class Growth:
         self.tissue = tissue
         self.level = None
 
-    def get_params(self):
+    def get_params(self, params_obj):
         target_name = self.target.name
         growth_name = f'{target_name}_growth'
         initial_name = f'{target_name}_initial'
 
-        yield growth_name, self.rate
-        yield initial_name, self.initial_level
+        params_obj.add(growth_name, value=self.rate)
+        params_obj.add(initial_name, value=self.initial_level)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -127,7 +129,7 @@ class LinearCombination:
         self.gene_names = list(gene_names)
         self.delay = delay
 
-    def get_params(self):
+    def get_params(self, params_obj):
         target_name = self.target.name
         upstream_names = self.gene_names
 
@@ -138,7 +140,7 @@ class LinearCombination:
         d = {}
         for n, w in zip(upstream_names, weights):
             param_name = f'{target_name}_w{n}'
-            yield param_name, w
+            params_obj.add(param_name, value=w)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -182,23 +184,26 @@ class LinearCombination:
 
 
 class LogisticFunction:
-    def __init__(self, *, rate=1, midpoint=50, upstream_name=None, delay=1):
+    "Logistic function: switch on above threshold."
+    def __init__(self, *, rate=11, midpoint=50, upstream_name=None, delay=1):
         assert upstream_name is not None
         self.rate = rate
         self.midpoint = midpoint
         self.upstream_name = upstream_name
         self.delay = delay
 
-    def get_params(self):
+    def get_params(self, params_obj):
         target_name = self.target.name
-        rate = self.rate
-        midpoint = self.midpoint
+        rate = float(self.rate)
+        midpoint = float(self.midpoint)
 
         param_name = f'{target_name}_rate'
-        yield param_name, rate
+        params_obj.add(param_name, value=self.rate, min=11, max=100,
+                       brute_step=1)
 
         param_name = f'{target_name}_midpoint'
-        yield param_name, midpoint
+        params_obj.add(param_name, value=midpoint, min=0, max=100,
+                       brute_step=1)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -223,19 +228,22 @@ class LogisticFunction:
         else:
             input_level = 0
 
-        # calc logistic function
-        expon = -self.rate * (input_level - self.midpoint)
+        # calc logistic function, centered at midpoint, with k = log(rate/10)
+        rate = math.log(self.rate / 10)
+        expon = -rate * (input_level - self.midpoint)
         denom = 1 + math.exp(expon)
         level = round(100 / denom)
 
         return self.target, GeneStateInfo(level, True)
 
 
-def run_lmfit(start, stop, fit_values, fit_genes):
+def run_lmfit(start, stop, fit_values, fit_genes,
+              *, debug=False, method='leastsq'):
     for g in fit_genes:
         assert isinstance(g, vfg.Gene)
 
     def get_fit_params():
+        "Extract initial fit parameters from all genes."
         p = Parameters()
         found = set()
         for ix in vfg._rules:
@@ -244,15 +252,16 @@ def run_lmfit(start, stop, fit_values, fit_genes):
                     raise Exception(f"ix {ix} must be a Custom2 ix")
                 found.add(ix.dest.name)
                 obj = ix.obj
-                for k, v in obj.get_params():
-                    p.add(k, v)
+                obj.get_params(p)
 
+        # track genes we were supposed to find (but didn't) & complain.
         if len(found) != len(fit_genes):
             missing = set([ g.name for g in fit_genes ]) - found
             raise Exception(f'missing: {missing}')
         return p
 
     def set_fit_params(p):
+        "Set fit parameters on all the genes."
         for ix in vfg._rules:
             if ix.dest in fit_genes:
                 if not isinstance(ix, vfg.Interaction_Custom2):
@@ -263,21 +272,41 @@ def run_lmfit(start, stop, fit_values, fit_genes):
     tc = Timecourse(start=start, stop=stop)
 
     times = list(range(start, stop + 1))
-    def residual(params, times, data):
+    def residual(params, xvals, data):
+        assert xvals == times
+        assert data == fit_values
+
+        if debug:
+            print('RUNNING RESIDUAL:', xvals)
+            params.pretty_print()
+
+        # now, run the time course!
         set_fit_params(params)
         tc.reset()
         tc.run()
 
+        # retrieve values
         vals = []
         for ga in tc:
             for gene in fit_genes:
                 gs = ga.get_by_tissue_name('M').get_gene_state(gene.name)
                 vals.append(gs.level)
 
-        return np.array(vals) - np.array(data)
+        residuals = np.array(vals) - np.array(data)
+        if debug:
+            print('results:', residuals)
+        return residuals
 
     params = get_fit_params()
-    res = minimize(residual, params, args=(times, fit_values))
+    res = minimize(residual, params, args=(times, fit_values),
+                   method=method)
     set_fit_params(res.params)
 
-    print('final fit params:', res.params)
+    if hasattr(res, 'message'):
+        print('fit message:', res.message)
+
+    print('fit values:')
+    for k in res.init_values:
+        print(f'\t{k}: fit={res.params[k].value} (was: {res.init_values[k]})')
+
+    return res
