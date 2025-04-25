@@ -2,8 +2,9 @@ import numpy as np
 from lmfit import minimize, Parameters
 import math
 
-from dinkum import vfg, Timecourse
+from dinkum import vfg, Timecourse, TissueGeneStates
 from dinkum.vfg import GeneStateInfo
+from dinkum.vfn import get_tissue
 
 # @CTB prevent set_gene from being called multiple times
 
@@ -183,13 +184,12 @@ class LinearCombination:
         return self.target, GeneStateInfo(output, True)
 
 
-class LogisticFunction:
+class LogisticActivator:
     "Logistic function: switch on above threshold."
-    def __init__(self, *, rate=11, midpoint=50, upstream_name=None, delay=1):
-        assert upstream_name is not None
+    def __init__(self, *, rate=11, midpoint=50, activator_name, delay=1):
         self.rate = rate
         self.midpoint = midpoint
-        self.upstream_name = upstream_name
+        self.activator_name = activator_name
         self.delay = delay
 
     def get_params(self, params_obj):
@@ -220,7 +220,7 @@ class LogisticFunction:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        gene = vfg.get_gene(self.upstream_name)
+        gene = vfg.get_gene(self.activator_name)
         gsi = states.get_gene_state_info(timepoint, delay, gene, tissue)
 
         if gsi is not None:
@@ -241,14 +241,12 @@ class LogisticRepressor:
     """Logistic function: activate if activator, unless repressor
     above threshold"""
     def __init__(self, *, rate=11, midpoint=50,
-                 activator=None, repressor=None, delay=1):
-        assert repressor is not None
-        assert activator is not None
+                 activator_name, repressor_name, delay=1):
         self.rate = rate
         self.midpoint = midpoint
         self.delay = delay
-        self.activator = activator
-        self.repressor = repressor
+        self.activator = activator_name
+        self.repressor = repressor_name
 
     def get_params(self, params_obj):
         target_name = self.target.name
@@ -388,3 +386,95 @@ def run_lmfit(start, stop, fit_values, fit_genes,
         print(f'\t{k}: fit={res.params[k].value} (was: {res.init_values[k]})')
 
     return res
+
+
+def calc_response_1d(*, timepoint, target_gene_name,
+                     variable_gene_name, fixed_gene_states={}, delay=1,
+                     tissue_name='M'):
+    
+    """
+    Return two 101-length arrays, xvals and yvals.
+
+    xvals is range(0, 101).
+    yvals is the activity of the target_gene_name as the variable_gene_name
+    varies from 0 to 100.
+
+    Optionally fix other genes using fixed_gene_states.
+
+    Run at timepoint with given delay.
+    """
+    tissue = get_tissue(tissue_name)
+
+    set_tp = timepoint - delay
+
+    states_d = TissueGeneStates()
+    for gene_name, gsi in fixed_gene_states.items():
+        assert isinstance(gsi, GeneStateInfo)
+        states_d.set_gene_state(timepoint=set_tp, tissue_name=tissue_name, gene_name=gene_name, state_info=gsi)
+
+    # get relevant interaction for the given target gene
+    ixlist = []
+    for ix in get_ix2_for_gene_name(target_gene_name):
+        ixlist.append(ix)
+    assert len(ixlist) == 1
+    ix = ixlist[0]
+
+    xvals = []
+    yvals = []
+    for activity in range(0, 101):
+        in_gsi = GeneStateInfo(activity, True)
+        states_d.set_gene_state(timepoint=set_tp, tissue_name=tissue_name, gene_name=variable_gene_name, state_info=in_gsi)
+        out_gsi = list(ix.advance(timepoint=timepoint, states=states_d, tissue=tissue))
+        assert len(out_gsi) == 1
+        _, out_gsi = out_gsi[0]
+
+        xvals.append(activity)
+        yvals.append(out_gsi.level)
+
+    return np.array(xvals), np.array(yvals)
+
+
+def calc_response_2d(*, timepoint, target_gene_name, x_gene_name,
+                    y_gene_name, fixed_gene_states={}, delay=1,
+                    tissue_name='M'):
+    """
+    Produce a [101, 101]-dimensional array where the Z values are
+    the target_gene_name activity as x_gene_name and y_gene_name
+    levels vary between 0 and 100.
+
+    Optionally fix gene states for other genes using 'fixed_gene_states'.
+
+    Run the target_gene_name at the given timepoint with the given delay.
+    """
+    
+    set_tp = timepoint - delay
+    tissue = get_tissue(tissue_name)
+
+    # initialize states dict, optionally with preset fixed_gene states
+    states_d = TissueGeneStates()
+    for gene_name, gsi in fixed_gene_states.items():
+        assert isinstance(gsi, GeneStateInfo)
+        states_d.set_gene_state(timepoint=set_tp, tissue_name=tissue_name, gene_name=gene_name, state_info=gsi)
+    
+    # find the relevant interaction for the target gene; There Should Only Be One
+    ixlist = []
+    for ix in vfg2.get_ix2_for_gene_name(target_gene_name):
+        ixlist.append(ix)
+    assert len(ixlist) == 1
+    ix = ixlist[0]
+
+    # iterate across x and y ranges, setting gene activity
+    arr = np.zeros((101, 101))
+    for x_activity in range(0, 101):
+        x_gsi = GeneStateInfo(x_activity, True)
+        states_d.set_gene_state(timepoint=set_tp, tissue_name=tissue_name, gene_name=x_gene_name, state_info=x_gsi)
+        for y_activity in range(0, 101):
+            y_gsi = GeneStateInfo(y_activity, True)
+            states_d.set_gene_state(timepoint=set_tp, tissue_name=tissue_name, gene_name=y_gene_name, state_info=y_gsi)
+            out_gsi = list(ix.advance(timepoint=timepoint, states=states_d, tissue=tissue))
+            assert len(out_gsi) == 1
+            _, out_gsi = out_gsi[0]
+
+            arr[y_activity, x_activity] = out_gsi.level
+
+    return arr

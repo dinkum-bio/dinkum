@@ -3,10 +3,11 @@ from lmfit import Parameters
 
 import dinkum
 from dinkum.exceptions import DinkumInvalidGene
-from dinkum.vfg import Gene
+from dinkum.vfg import Gene, GeneStateInfo
 from dinkum.vfn import Tissue
-from dinkum.vfg2 import Growth, Decay, LinearCombination, GeneTimecourse, \
-    run_lmfit
+from dinkum.vfg2 import (Growth, Decay, LinearCombination, GeneTimecourse,
+                         run_lmfit, LogisticRepressor, LogisticActivator,
+                         calc_response_1d, calc_response_2d)
 
 from dinkum import observations
 
@@ -175,6 +176,57 @@ def test_basic_linear_combination_no_such_gene():
 
     with pytest.raises(DinkumInvalidGene):
         dinkum.run(1, 5, verbose=True)
+
+
+def test_logistic_activator():
+    dinkum.reset()
+
+    z = Gene(name='Z')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    out.custom2(LogisticActivator(rate=100, midpoint=50, activator_name='Z'))
+
+    xvals, yvals = calc_response_1d(timepoint=2,
+                                    target_gene_name='out',
+                                    variable_gene_name='Z')
+    assert yvals[0] == 0
+    assert yvals[47] == 0
+    assert yvals[48] == 1
+    assert yvals[49] == 9
+    assert yvals[50] == 50
+    assert yvals[51] == 91
+    assert yvals[52] == 99
+    assert yvals[53] == 100
+    assert yvals[100] == 100
+
+
+def test_logistic_repressor():
+    dinkum.reset()
+
+    x = Gene(name='X')
+    z = Gene(name='Z')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    out.custom2(LogisticRepressor(rate=100, midpoint=50,
+                                  activator_name='X',
+                                  repressor_name='Z'))
+
+    xvals, yvals = calc_response_1d(timepoint=2,
+                                    target_gene_name='out',
+                                    variable_gene_name='Z',
+                                    fixed_gene_states={ 'X': GeneStateInfo(100, True) })
+    print(yvals)
+    assert yvals[0] == 100
+    assert yvals[47] == 100
+    assert yvals[48] == 99
+    assert yvals[49] == 91
+    assert yvals[50] == 50
+    assert yvals[51] == 9
+    assert yvals[52] == 1
+    assert yvals[53] == 0
+    assert yvals[100] == 0
 
 
 def test_fit():
