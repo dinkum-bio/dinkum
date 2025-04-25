@@ -18,6 +18,11 @@ def get_tissues():
 def get_tissue_names():
     return list(sorted([ t.name for t in _tissues ]))
 
+def get_tissue(name):
+    for t in _tissues:
+        if t.name == name:
+            return t
+
 def reset():
     global _tissues
     _tissues = []

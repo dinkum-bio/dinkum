@@ -91,12 +91,12 @@ class Growth:
             return self.target, GeneStateInfo(int(level), True)
 
 class GeneTimecourse:
-    def __init__(self, *, start_time, tissue, values, scale=True):
+    def __init__(self, *, start_time, tissue, values, normalize=True):
         self.start_time = start_time
         self.tissue = tissue
 
         values = list(values)
-        if scale:
+        if normalize:
             max_val = max(values) or 1
             values = [ x / max_val * 100 for x in values ]
 
@@ -237,6 +237,85 @@ class LogisticFunction:
         return self.target, GeneStateInfo(level, True)
 
 
+class LogisticRepressor:
+    """Logistic function: activate if activator, unless repressor
+    above threshold"""
+    def __init__(self, *, rate=11, midpoint=50,
+                 activator=None, repressor=None, delay=1):
+        assert repressor is not None
+        assert activator is not None
+        self.rate = rate
+        self.midpoint = midpoint
+        self.delay = delay
+        self.activator = activator
+        self.repressor = repressor
+
+    def get_params(self, params_obj):
+        target_name = self.target.name
+        rate = float(self.rate)
+        midpoint = float(self.midpoint)
+
+        param_name = f'{target_name}_rate'
+        params_obj.add(param_name, value=self.rate, min=11, max=100,
+                       brute_step=1)
+
+        param_name = f'{target_name}_midpoint'
+        params_obj.add(param_name, value=midpoint, min=0, max=100,
+                       brute_step=1)
+
+    def set_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f'{target_name}_rate'
+        self.rate = params_obj[param_name].value
+
+        param_name = f'{target_name}_midpoint'
+        self.midpoint = params_obj[param_name].value
+
+    def set_gene(self, gene):
+        self.target = gene
+
+    def advance(self, timepoint, states, tissue):
+        delay = self.delay
+
+        activator = vfg.get_gene(self.activator)
+        activator_state = states.get_gene_state_info(timepoint, delay,
+                                                     activator, tissue)
+
+        # are we activated? if not, then bail early.
+        if activator_state is None or activator_state.level == 0 or not activator_state.active:
+            return self.target, GeneStateInfo(0, False)
+
+        # ok, activated - record level and now see if we are repressed...
+        activator_level = activator_state.level
+
+        repressor = vfg.get_gene(self.repressor)
+        repressor_state = states.get_gene_state_info(timepoint, delay,
+                                                     repressor, tissue)
+
+        if repressor_state is not None:
+            repressor_input = repressor_state.level
+        else:
+            repressor_input = 0
+
+        # calc logistic function, centered at midpoint, with k = log(rate/10)
+        rate = math.log(self.rate / 10)
+        expon = -rate * (repressor_input - self.midpoint)
+        denom = 1 + math.exp(expon)
+        repressor_output = round(100 / denom)
+
+        # are we repressed?
+        level2 = max(activator_level - repressor_output, 0)
+        return self.target, GeneStateInfo(level2, True)
+
+
+def get_ix2_for_gene_name(gene_name):
+    for ix in vfg._rules:
+        if ix.dest.name == gene_name:
+            if not isinstance(ix, vfg.Interaction_Custom2):
+                raise Exception(f"ix {ix} must be a Custom2 ix")
+            yield ix
+
 def run_lmfit(start, stop, fit_values, fit_genes,
               *, debug=False, method='leastsq'):
     for g in fit_genes:
@@ -246,11 +325,10 @@ def run_lmfit(start, stop, fit_values, fit_genes,
         "Extract initial fit parameters from all genes."
         p = Parameters()
         found = set()
-        for ix in vfg._rules:
-            if ix.dest in fit_genes:
-                if not isinstance(ix, vfg.Interaction_Custom2):
-                    raise Exception(f"ix {ix} must be a Custom2 ix")
-                found.add(ix.dest.name)
+
+        for fit_gene in fit_genes:
+            for ix in get_ix2_for_gene_name(fit_gene.name):
+                found.add(fit_gene.name)
                 obj = ix.obj
                 obj.get_params(p)
 
