@@ -76,6 +76,7 @@ def run_and_display(*args, **kwargs):
 
 
 class GeneStates:
+    "Gene states."
     def __init__(self):
         self.genes_by_name = {}
 
@@ -154,6 +155,9 @@ class TissueAndGeneStateAtTime:
         "get Tissue object."
         return self._tissues_by_name[tissue.name]
 
+    def get(self, tissue):
+        return self._tissues_by_name.get(tissue.name)
+
     def get_by_tissue_name(self, tissue_name):
         assert not isinstance(tissue_name, vfn.Tissue)
         return self._tissues_by_name[tissue_name]
@@ -176,12 +180,15 @@ class TissueAndGeneStateAtTime:
 class TissueGeneStates(collections.UserDict):
     """
     Contains (potentially incomplete) set of tissue/gene states for many
-    timepoints.
+    timepoints. Top-level container.
+
+    Keys are integer times.
     """
     def __init__(self):
         self.data = {}
 
     def is_active(self, current_tp, delay, gene, tissue):
+        # @CTB deprecate
         from .vfg import Gene
 
         assert int(current_tp)
@@ -206,6 +213,30 @@ class TissueGeneStates(collections.UserDict):
         if time_state:
             return time_state.get_gene_state_info(gene, tissue)
         return None
+
+    def set_gene_state(self, *, timepoint=None, tissue_name=None,
+                       gene_name=None, state_info=None):
+        assert timepoint is not None
+        assert tissue_name is not None
+        assert gene_name is not None
+        assert state_info is not None
+        timepoint = int(timepoint)
+
+        tissue = vfn.get_tissue(tissue_name)
+        gene = vfg.get_gene(gene_name)
+
+        time_state = self.get(timepoint)
+        if time_state is None:
+            time_state = TissueAndGeneStateAtTime(tissues=[tissue],
+                                                  time=timepoint)
+            self.data[timepoint] = time_state
+
+        gene_state = time_state.get(tissue)
+        if gene_state is None:
+            gene_state = GeneStates()
+            time_state[tissue] = gene_state
+
+        gene_state.set_gene_state(gene=gene, state_info=state_info)
 
 
 class Timecourse:
