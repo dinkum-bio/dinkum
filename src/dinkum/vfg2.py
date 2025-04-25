@@ -307,6 +307,100 @@ class LogisticRepressor:
         return self.target, GeneStateInfo(level2, True)
 
 
+class LogisticMultiRepressor:
+    """Logistic function: activate if activator, unless sum of repressors
+    above threshold"""
+    def __init__(self, *, rate=11, midpoint=50,
+                 activator_name, repressor_names, weights=None, delay=1):
+        self.rate = rate
+        self.midpoint = midpoint
+        self.delay = delay
+        self.activator = activator_name
+        assert not isinstance(repressor_names, str)
+        self.repressor_names = repressor_names
+
+        # default weights to 1 for each input, if not specified
+        if weights is None:
+            weights = [1] * len(repressor_names)
+
+        assert len(weights) == len(repressor_names)
+        self.weights = weights
+
+    def get_params(self, params_obj):
+        target_name = self.target.name
+        rate = float(self.rate)
+
+        param_name = f'{target_name}_rate'
+        params_obj.add(param_name, value=self.rate, min=11, max=100,
+                       brute_step=1)
+
+        # no need to adjust midpoint here; adjusting the weights can suffice.
+        upstream_names = self.repressor_names
+
+        weights = self.weights
+        if weights is None:
+            weights = [1] * len(upstream_names)
+
+        d = {}
+        for n, w in zip(upstream_names, weights):
+            param_name = f'{target_name}_w{n}'
+            params_obj.add(param_name, value=w)
+
+    def set_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f'{target_name}_rate'
+        self.rate = params_obj[param_name].value
+
+        upstream_names = self.repressor_names
+
+        weights = []
+        d = {}
+        for n in upstream_names:
+            param_name = f'{target_name}_w{n}'
+            val = params_obj[param_name].value
+            weights.append(val)
+        self.weights = weights
+
+    def set_gene(self, gene):
+        self.target = gene
+
+    def advance(self, timepoint, states, tissue):
+        delay = self.delay
+
+        activator = vfg.get_gene(self.activator)
+        activator_state = states.get_gene_state_info(timepoint, delay,
+                                                     activator, tissue)
+
+        # are we activated? if not, then bail early.
+        if activator_state is None or activator_state.level == 0 or not activator_state.active:
+            return self.target, GeneStateInfo(0, False)
+
+        # ok, activated - record level and now see if we are repressed...
+        activator_level = activator_state.level
+
+
+        repressor_sum = 0.
+        for repressor, weight in zip(self.repressor_names, self.weights):
+            r = vfg.get_gene(repressor)
+            repressor_state = states.get_gene_state_info(timepoint, delay,
+                                                         r, tissue)
+            if repressor_state is not None:
+                repressor_sum += weight*repressor_state.level
+            else:
+                repressor_input = 0
+
+        # calc logistic function, centered at midpoint, with k = log(rate/10)
+        rate = math.log(self.rate / 10)
+        expon = -rate * (repressor_sum - self.midpoint)
+        denom = 1 + math.exp(expon)
+        repressor_output = round(100 / denom)
+
+        # are we repressed?
+        level2 = max(activator_level - repressor_output, 0)
+        return self.target, GeneStateInfo(level2, True)
+
+
 def get_ix2_for_gene_name(gene_name):
     for ix in vfg._rules:
         if ix.dest.name == gene_name:

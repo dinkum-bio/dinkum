@@ -7,7 +7,8 @@ from dinkum.vfg import Gene, GeneStateInfo
 from dinkum.vfn import Tissue
 from dinkum.vfg2 import (Growth, Decay, LinearCombination, GeneTimecourse,
                          run_lmfit, LogisticRepressor, LogisticActivator,
-                         calc_response_1d, calc_response_2d)
+                         calc_response_1d, calc_response_2d,
+                         LogisticMultiRepressor)
 
 from dinkum import observations
 
@@ -212,6 +213,34 @@ def test_logistic_repressor():
     out.custom2(LogisticRepressor(rate=100, midpoint=50,
                                   activator_name='X',
                                   repressor_name='Z'))
+
+    xvals, yvals = calc_response_1d(timepoint=2,
+                                    target_gene_name='out',
+                                    variable_gene_name='Z',
+                                    fixed_gene_states={ 'X': GeneStateInfo(100, True) })
+    print(yvals)
+    assert yvals[0] == 100
+    assert yvals[47] == 100
+    assert yvals[48] == 99
+    assert yvals[49] == 91
+    assert yvals[50] == 50
+    assert yvals[51] == 9
+    assert yvals[52] == 1
+    assert yvals[53] == 0
+    assert yvals[100] == 0
+
+
+def test_logistic_repressor_multi():
+    dinkum.reset()
+
+    x = Gene(name='X')
+    z = Gene(name='Z')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    out.custom2(LogisticMultiRepressor(rate=100, midpoint=50,
+                                       activator_name='X',
+                                       repressor_names=['Z']))
 
     xvals, yvals = calc_response_1d(timepoint=2,
                                     target_gene_name='out',
