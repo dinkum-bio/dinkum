@@ -458,7 +458,7 @@ def calc_response_2d(*, timepoint, target_gene_name, x_gene_name,
     
     # find the relevant interaction for the target gene; There Should Only Be One
     ixlist = []
-    for ix in vfg2.get_ix2_for_gene_name(target_gene_name):
+    for ix in get_ix2_for_gene_name(target_gene_name):
         ixlist.append(ix)
     assert len(ixlist) == 1
     ix = ixlist[0]
