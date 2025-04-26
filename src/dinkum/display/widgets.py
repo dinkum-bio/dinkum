@@ -41,10 +41,10 @@ class MultiTissuePanel:
     in each one.
     """
     def __init__(self, *, states=None, tissue_names=None, save_image=None,
-                 canvas_type='pillow', genes_by_name=None):
+                 canvas_type='pillow', gene_names=None):
         # create individual panels for each tissue
         self.panels = [ TissueActivityPanel(states=states, tissue_name=t,
-                                            genes_by_name=genes_by_name)
+                                            gene_names=gene_names)
                         for t in tissue_names ]
 
         self.save_image = save_image
@@ -121,7 +121,7 @@ class TissueActivityPanel:
     box_x_start = 100
     box_y_start = 50
     
-    def __init__(self, *, states=None, tissue_name=None, genes_by_name=None):
+    def __init__(self, *, states=None, tissue_name=None, gene_names=None):
         assert tissue_name is not None
         self.tissue_name = tissue_name
 
@@ -137,15 +137,15 @@ class TissueActivityPanel:
             all_gene_names.update(activity.genes_by_name)
 
         ordered_names = []
-        if not genes_by_name:
+        if not gene_names:
             ordered_names = list(all_gene_names)
         else:
-            # prioritize genes_by_name; do remainder alphabetically
-            for k in genes_by_name:
+            # prioritize gene_names; do remainder alphabetically
+            for k in gene_names:
                 ordered_names.append(k)
-            for k in sorted(all_gene_names):
-                if k not in genes_by_name:
-                    ordered_names.append(k)
+#            for k in sorted(all_gene_names):
+#                if k not in gene_names:
+#                    ordered_names.append(k)
         self.gene_names = ordered_names
 
         self.times = times

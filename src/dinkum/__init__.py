@@ -65,7 +65,7 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
                                                       get_state_fn)
 
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
-                          genes_by_name=gene_names,
+                          gene_names=gene_names,
                           save_image=save_image)
     return mp.draw(get_state_fn), level_df, active_df
 
