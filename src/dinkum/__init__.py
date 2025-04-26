@@ -30,7 +30,8 @@ def reset(*, verbose=True):
 def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
                        verbose=False, save_image=None, trace_fn=None):
     """
-    Run and display the circuit model.
+    Run and display the circuit model; wrapper for
+    dinkum.display.tc_record_activity.
 
     Key parameter:
     - start (default: 1)
@@ -76,7 +77,9 @@ def run_and_display(*args, **kwargs):
 
 
 class GeneStates:
-    "Gene states."
+    """Gene states.
+
+    A class to contain/manage GeneStateInfo objects for multiple genes."""
     def __init__(self):
         self.genes_by_name = {}
 
@@ -128,7 +131,7 @@ class TissueAndGeneStateAtTime:
     """
     Hold the gene activity state for multiple tissues at a particular tp.
 
-    Holds multiple tissue, each with their own GeneStates object.
+    Holds multiple tissues, each with their own GeneStates object.
 
     dict interface supports getting and setting gene activity (value) by
     tissue (key).
@@ -180,9 +183,8 @@ class TissueAndGeneStateAtTime:
 class TissueGeneStates(collections.UserDict):
     """
     Contains (potentially incomplete) set of tissue/gene states for many
-    timepoints. Top-level container.
-
-    Keys are integer times.
+    timepoints. Top-level container. Indexed by timepoint (integer),
+    returns TissueAndGeneStateAtTime objects.
     """
     def __init__(self):
         self.data = {}
@@ -241,7 +243,8 @@ class TissueGeneStates(collections.UserDict):
 
 class Timecourse:
     """
-    Run a time course for a system b/t two time points, start and stop.
+    Run and record a time course for a system b/t two time points,
+    start and stop.
     """
     def __init__(self, *, start=None, stop=None, trace_fn=None):
         assert start is not None
@@ -318,7 +321,7 @@ class Timecourse:
 
 
 def run(start, stop, *, verbose=False, trace_fn=None):
-    # run time course
+    """Run a time course in 'headless' mode - no real output."""
     tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
     tc.run(verbose=verbose)
 
@@ -334,6 +337,9 @@ def run(start, stop, *, verbose=False, trace_fn=None):
 
 
 def convert_states_to_dataframe(states, gene_names, get_state_fn):
+    """
+    Convert to a pandas DataFrame.
+    """
     level_rows = []
     active_rows = []
 

@@ -6,6 +6,7 @@ from .. import Timecourse
 
 def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
                        trace_fn=None):
+    # @CTB deprecate this approach!
     tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
 
     state_record = []     # (tp_name, state)
