@@ -3,7 +3,7 @@ __all__ = ["MultiTissuePanel",
 
 from .draw_ipycanvas import IpycanvasDrawer
 from .draw_pillow import PillowDrawer
-from dinkum import vfg
+from dinkum import vfg, vfn
 import matplotlib
 
 EMIT_WARNINGS = False
@@ -50,7 +50,7 @@ class MultiTissuePanel:
         self.save_image = save_image
         self.canvas_type = canvas_type
 
-    def draw(self, gene_state_fn, level=100):
+    def draw(self, gene_states, level=100):
         """
         Draw the basic background canvas, upon which gene activation info
         will be displayed.
@@ -86,8 +86,7 @@ class MultiTissuePanel:
 
             # draw time point/tissue/state
             gene_names = p.gene_names
-            times = p.times
-            d.draw(canvas, times, gene_names, gene_state_fn)
+            d.draw(canvas, gene_states.keys(), gene_names, gene_states)
 
         if self.save_image:
             canvas.save()
@@ -129,9 +128,12 @@ class TissueActivityPanel:
 
         # determine all genes relevant to this tissue, + times, from 'states'.
         times = []
+        times_str = []
         all_gene_names = set()
-        for (tp, state) in states:
-            times.append(tp)
+        for (timepoint, state) in states.items():
+            tp_str = f't={timepoint}'
+            times.append(timepoint)
+            times_str.append(tp_str)
             
             activity = state.get_by_tissue_name(tissue_name)
             all_gene_names.update(activity.genes_by_name)
@@ -149,11 +151,12 @@ class TissueActivityPanel:
         self.gene_names = ordered_names
 
         self.times = times
+        self.times_str = times_str
         self.states = states
 
     def estimate_panel_size(self):
         "Estimate the size of this panel, based on # times / # genes"
-        height = (len(self.times) + 1) * (self.box_size + self.box_spacing) + \
+        height = (len(self.times_str) + 1) * (self.box_size + self.box_spacing) + \
             self.box_y_start
         width = len(self.gene_names) * (self.box_size + self.box_spacing) + \
             self.box_x_start
@@ -167,6 +170,7 @@ class TissueActivityPanel:
         """
         gene_names = self.gene_names
         times = self.times
+        times_str = self.times_str
 
         box_total_size = self.box_size + self.box_spacing
 
@@ -200,10 +204,10 @@ class TissueActivityPanel:
         self.locations_by_tg = locations_by_tg
 
         # draw row names / time points
-        for row in range(0, len(times)):
+        for row in range(0, len(times_str)):
             xpos = self.box_x_start - box_total_size / 2 + x_offset
             ypos = self.box_y_start + box_total_size*row
-            canvas.draw_text(times[row], xpos, ypos, align="right")
+            canvas.draw_text(times_str[row], xpos, ypos, align="right")
 
         # draw col names / genes
         for col in range(0, len(gene_names)):
@@ -231,27 +235,28 @@ class TissueActivityPanel_Draw:
     def __init__(self, template):
         self.template = template
 
-    def draw(self, canvas, times, gene_names, get_gene_state):
+    def draw(self, canvas, times, gene_names, gene_states):
         locations_by_tg = self.template.locations_by_tg
         tissue_name = self.template.tissue_name
+        tissue_obj = vfn.get_tissue(tissue_name)
 
         for tp in times:
             for gene_name in gene_names:
                 color = None
 
                 active_color = self.active_color
-                gs = get_gene_state(tissue_name, tp, gene_name)
                 gene_obj = vfg.get_gene(gene_name)
+                gsi = gene_states.get_gene_state_info(tp, 0, gene_obj, tissue_obj)
 
                 # check a few constraints...
-                if gs.level == 0 and gs.active and EMIT_WARNINGS:
+                if gsi.level == 0 and gsi.active and EMIT_WARNINGS:
                     print(f"WARNING: at time {tp} gene {gene_name} has level == 0 but is active! Is this intentional??")
-                if not gene_obj.is_receptor and gs.level > 0 and not gs.active and EMIT_WARNINGS:
-                    print(F"WARNING: at time {tp} gene {gene_name} has level {gs.level} but is not active! Is this intentional??")
+                if not gene_obj.is_receptor and gsi.level > 0 and not gsi.active and EMIT_WARNINGS:
+                    print(F"WARNING: at time {tp} gene {gene_name} has level {gsi.level} but is not active! Is this intentional??")
                     raise Exception("what 2")
 
-                color = map_to_color(gs.level, gene_obj.is_receptor,
-                                     gene_obj.is_ligand, gs.active)
+                color = map_to_color(gsi.level, gene_obj.is_receptor,
+                                     gene_obj.is_ligand, gsi.active)
 
                 loc = locations_by_tg.get((tp, gene_name))
                 if loc:

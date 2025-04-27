@@ -13,7 +13,7 @@ import itertools
 import collections
 
 from . import vfg
-from .vfg import GeneStateInfo, DEFAULT_OFF
+from .vfg import GeneStateInfo, DEFAULT_OFF, get_gene
 from . import vfn
 from . import observations
 from . import utils
@@ -51,24 +51,22 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
         tissue_names = vfn.get_tissue_names()
 
     try:
-        states, tissues, get_state_fn = \
-            tc_record_activity(start=start,
-                               stop=stop,
-                               gene_names=gene_names,
-                               verbose=verbose,
-                               trace_fn=trace_fn)
+        states = tc_record_activity(start=start,
+                                    stop=stop,
+                                    gene_names=gene_names,
+                                    verbose=verbose,
+                                    trace_fn=trace_fn)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
-        return None, None, None
+        return None
 
-    level_df, active_df = convert_states_to_dataframe(states, gene_names,
-                                                      get_state_fn)
+    level_df, active_df = convert_states_to_dataframe(states, gene_names)
 
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
                           gene_names=gene_names,
                           save_image=save_image)
-    return mp.draw(get_state_fn), level_df, active_df
+    return mp.draw(states), level_df, active_df
 
 
 def run_and_display(*args, **kwargs):
@@ -194,7 +192,7 @@ class TissueGeneStates(collections.UserDict):
         from .vfg import Gene
 
         assert int(current_tp)
-        assert int(delay)
+        delay = int(delay)
         assert isinstance(gene, Gene)
 
         check_tp = current_tp - delay
@@ -207,7 +205,7 @@ class TissueGeneStates(collections.UserDict):
         from .vfg import Gene
 
         assert int(current_tp)
-        assert int(delay)
+        delay = int(delay)
         assert isinstance(gene, Gene)
 
         check_tp = current_tp - delay
@@ -336,25 +334,25 @@ def run(start, stop, *, verbose=False, trace_fn=None):
     return tc
 
 
-def convert_states_to_dataframe(states, gene_names, get_state_fn):
+def convert_states_to_dataframe(states, gene_names):
     """
     Convert to a pandas DataFrame.
     """
     level_rows = []
     active_rows = []
 
-    for tp, tissue_and_gene_sat in states:
-        assert tp.startswith('t=')
-        timepoint = int(tp.split('=')[1]) # convert tp str to int
+    for timepoint, tissue_and_gene_sat in states.items():
+        timepoint_str = f't={timepoint}'
 
         # for each tissue, get level of each gene
         for tissue in tissue_and_gene_sat.tissues:
-            level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
-            active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=tp)
+            level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
+            active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
             for gene_name in gene_names:
-                gsa = get_state_fn(tissue.name, tp, gene_name)
-                level_d[gene_name] = gsa.level
-                active_d[gene_name] = gsa.active
+                gene = get_gene(gene_name)
+                gsi = states.get_gene_state_info(timepoint, 0, gene, tissue)
+                level_d[gene_name] = gsi.level
+                active_d[gene_name] = gsi.active
             level_rows.append(level_d)
             active_rows.append(active_d)
 
