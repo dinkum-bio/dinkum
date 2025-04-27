@@ -291,8 +291,7 @@ def test_fit():
     y.custom2(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
     z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
 
-    linear_combination = LinearCombination(weights=[-0.5, .33, .33],
-                                           gene_names=['X', 'Y', 'Z'])
+    linear_combination = LinearCombination(gene_names=['X', 'Y', 'Z'])
     o.custom2(linear_combination)
 
     fit_values = [0, 100, 83, 69, 57]
@@ -304,3 +303,138 @@ def test_fit():
     assert round(p['out_wX'].value, 2) == 1.00
     assert round(p['out_wY'].value, 2) == 0.00
     assert round(p['out_wZ'].value, 2) == -0.01
+
+
+def test_fit_2_logistic_activator():
+    # can we fit parameters to given output for LogisticActivator?
+
+    # first, calculate a response curve
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom2(LogisticActivator(rate=92, midpoint=58, activator_name='X'))
+
+    tc = dinkum.run(start=1, stop=20, verbose=True)
+    states = tc.get_states()
+    level_df, _ = states.to_dataframe()
+
+    print(level_df)
+    fit_to_vals = list(level_df['out'])
+    print(fit_to_vals)
+
+    # ok, now, reset and run fit on growth -
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+
+    logit = LogisticActivator(activator_name='X')
+    out.custom2(logit)
+
+    # fit!!
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method='brute')
+
+    # extract parameters -
+    print(res.params)
+    logit.set_params(res.params)
+
+    # have some tolerance...
+    assert int(logit.rate) in range(80, 95)
+    assert int(logit.midpoint) in range(55, 65)
+
+
+def test_fit_2_growth():
+    # can we fit parameters to given output for Growth?
+
+    # first, calculate a response curve
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name='X'))
+
+    tc = dinkum.run(start=1, stop=20, verbose=True)
+    states = tc.get_states()
+    level_df, _ = states.to_dataframe()
+
+    print(level_df)
+    fit_to_vals = list(level_df['out'])
+    print(fit_to_vals)
+
+    # ok, now, reset and run fit on growth -
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    # use incorrect params for Growth
+    growth = Growth(start_time=1, rate=1, initial_level=50, tissue=m)
+    x.custom2(growth)
+
+    logit = LogisticActivator(rate=11, midpoint=58, activator_name='X')
+    out.custom2(logit)
+
+    # fit!!
+    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method='brute')
+
+    # extract parameters -
+    print(res.params)
+    growth.set_params(res.params)
+    assert growth.rate == 0.1
+    assert growth.initial_level == 0
+
+
+def test_fit_2_decay():
+    # can we fit parameters to given output for Decay?
+
+    # first, calculate a response curve
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
+    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name='X'))
+
+    tc = dinkum.run(start=1, stop=20, verbose=True)
+    states = tc.get_states()
+    level_df, _ = states.to_dataframe()
+
+    print(level_df)
+    fit_to_vals = list(level_df['out'])
+    print(fit_to_vals)
+
+    # ok, now, reset and run fit on growth -
+    dinkum.reset()
+
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    # use incorrect params for Growth
+    growth = Decay(start_time=1, rate=1, initial_level=50, tissue=m)
+    x.custom2(growth)
+
+    logit = LogisticActivator(rate=11, midpoint=58, activator_name='X')
+    out.custom2(logit)
+
+    # fit!!
+    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method='brute')
+
+    # extract parameters -
+    print(res.params)
+    growth.set_params(res.params)
+    assert round(growth.rate, 1) == 1.2
+    assert int(growth.initial_level) == 75

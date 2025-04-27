@@ -21,8 +21,9 @@ class Decay:
         decay_name = f'{target_name}_decay'
         initial_name = f'{target_name}_initial'
 
-        params_obj.add(decay_name, value=self.rate)
-        params_obj.add(initial_name, value=self.initial_level)
+        params_obj.add(decay_name, value=self.rate, brute_step=0.1,
+                       min=0.01)
+        params_obj.add(initial_name, value=self.initial_level, brute_step=5)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -44,7 +45,7 @@ class Decay:
             # start!!
             self.level = self.initial_level
             return self.target, GeneStateInfo(self.level, True)
-        else: 
+        else:
             self.level /= self.rate
             return self.target, GeneStateInfo(self.level, True)
 
@@ -61,8 +62,8 @@ class Growth:
         growth_name = f'{target_name}_growth'
         initial_name = f'{target_name}_initial'
 
-        params_obj.add(growth_name, value=self.rate)
-        params_obj.add(initial_name, value=self.initial_level)
+        params_obj.add(growth_name, value=self.rate, brute_step=0.1)
+        params_obj.add(initial_name, value=self.initial_level, brute_step=5)
 
     def set_params(self, params_obj):
         target_name = self.target.name
