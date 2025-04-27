@@ -230,6 +230,26 @@ def test_logistic_repressor():
     assert yvals[100] == 0
 
 
+def test_logistic_repressor_2d():
+    dinkum.reset()
+
+    x = Gene(name='X')
+    z = Gene(name='Z')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    out.custom2(LogisticRepressor(rate=100, midpoint=50,
+                                  activator_name='X',
+                                  repressor_name='Z'))
+
+    arr = calc_response_2d(timepoint=2,
+                           target_gene_name='out',
+                           x_gene_name='X',
+                           y_gene_name='Z')
+
+    # test values? @CTB
+
+
 def test_logistic_repressor_multi():
     dinkum.reset()
 
