@@ -61,7 +61,7 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
         print("Halting execution.", file=sys.stderr)
         return None
 
-    level_df, active_df = convert_states_to_dataframe(states, gene_names)
+    level_df, active_df = states.to_dataframe(gene_names)
 
     mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
                           gene_names=gene_names,
@@ -238,6 +238,33 @@ class TissueGeneStates(collections.UserDict):
 
         gene_state.set_gene_state(gene=gene, state_info=state_info)
 
+    def to_dataframe(self, gene_names):
+        """
+        Convert to a pandas DataFrame.
+        """
+        level_rows = []
+        active_rows = []
+
+        for timepoint, tissue_and_gene_sat in self.items():
+            timepoint_str = f't={timepoint}'
+
+            # for each tissue, get level of each gene
+            for tissue in tissue_and_gene_sat.tissues:
+                level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
+                active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
+                for gene_name in gene_names:
+                    gene = get_gene(gene_name)
+                    gsi = self.get_gene_state_info(timepoint, 0, gene, tissue)
+                    level_d[gene_name] = gsi.level
+                    active_d[gene_name] = gsi.active
+                level_rows.append(level_d)
+                active_rows.append(active_d)
+
+        level_df = pd.DataFrame.from_dict(level_rows).set_index('timepoint')
+        active_df = pd.DataFrame.from_dict(active_rows).set_index('timepoint')
+
+        return level_df, active_df
+
 
 class Timecourse:
     """
@@ -317,11 +344,20 @@ class Timecourse:
         gene_state = tissue_state.get_gene_state(gene_name)
         return gene_state
 
-
-def run(start, stop, *, verbose=False, trace_fn=None):
-    """Run a time course in 'headless' mode - no real output."""
+def _run(*, start, stop, trace_fn=None, verbose=False):
+    "Run a time course. No output by default."
     tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
     tc.run(verbose=verbose)
+    tc.check()
+    return tc
+    
+
+def run(start, stop, *, verbose=False, trace_fn=None):
+    """Run a time course in 'headless' mode - minimal output.
+
+    Use for Python script/test execution.
+    """
+    tc = _run(start=start, stop=stop, verbose=verbose, trace_fn=trace_fn)
 
     for state in tc:
         print(f"time={state.time}")
@@ -331,32 +367,6 @@ def run(start, stop, *, verbose=False, trace_fn=None):
         if not observations.test_observations(state):
             raise DinkumObservationFailed(state.time)
 
+    tc.check()
+
     return tc
-
-
-def convert_states_to_dataframe(states, gene_names):
-    """
-    Convert to a pandas DataFrame.
-    """
-    level_rows = []
-    active_rows = []
-
-    for timepoint, tissue_and_gene_sat in states.items():
-        timepoint_str = f't={timepoint}'
-
-        # for each tissue, get level of each gene
-        for tissue in tissue_and_gene_sat.tissues:
-            level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
-            active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
-            for gene_name in gene_names:
-                gene = get_gene(gene_name)
-                gsi = states.get_gene_state_info(timepoint, 0, gene, tissue)
-                level_d[gene_name] = gsi.level
-                active_d[gene_name] = gsi.active
-            level_rows.append(level_d)
-            active_rows.append(active_d)
-
-    level_df = pd.DataFrame.from_dict(level_rows).set_index('timepoint')
-    active_df = pd.DataFrame.from_dict(active_rows).set_index('timepoint')
-
-    return level_df, active_df

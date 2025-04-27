@@ -2,18 +2,17 @@
 
 from .widgets import *
 
-from .. import Timecourse, TissueGeneStates
+from .. import Timecourse, TissueGeneStates, _run
 
 def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
                        trace_fn=None):
-    # @CTB deprecate this approach!
-    tc = Timecourse(start=start, stop=stop, trace_fn=trace_fn)
+    """Execute time course and return states dictionary.
+    
+    Legacy notebook function.
+    """
+    tc = _run(start=start, stop=stop, verbose=verbose, trace_fn=trace_fn)
 
     states = TissueGeneStates()
-    state_record = []     # (tp_name, state)
-
-    time_points = {}      # time_point_name => index
-    all_tissues = set()   # all tissues across all time points
 
     tc.run()
     tc.check()
@@ -25,7 +24,6 @@ def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
             print(tp)
 
         for ti in state.tissues:
-            all_tissues.add(ti.name)
             present = state[ti]
             if verbose:
                 print(f"\ttissue={ti.name}, {present.report_activity()}")
