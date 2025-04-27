@@ -297,7 +297,7 @@ def test_fit():
 
     fit_values = [0, 100, 83, 69, 57]
 
-    run_lmfit(1, 5, fit_values, [o])
+    run_lmfit(1, 5, fit_values, [o], debug=True)
 
     p = Parameters()
     linear_combination.get_params(p)
