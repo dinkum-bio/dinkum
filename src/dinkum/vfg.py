@@ -416,8 +416,10 @@ class Interaction_Custom(Interactions):
 
         dep_state = {}
         for name, gene in dep_genes:
-            gene_state = states.get_gene_state_info(timepoint, delay,
-                                                    gene, tissue)
+            gene_state = states.get_gene_state_info(timepoint=timepoint,
+                                                    delay=delay,
+                                                    gene=gene,
+                                                    tissue=tissue)
             if gene_state is None:
                 gene_state = DEFAULT_OFF
 

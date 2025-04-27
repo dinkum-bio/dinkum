@@ -2,9 +2,8 @@ import numpy as np
 from lmfit import minimize, Parameters
 import math
 
-from dinkum import vfg, Timecourse, TissueGeneStates
+from dinkum import vfg, Timecourse, TissueGeneStates, get_tissue, get_gene
 from dinkum.vfg import GeneStateInfo
-from dinkum.vfn import get_tissue
 
 # @CTB prevent set_gene from being called multiple times
 
@@ -167,8 +166,11 @@ class LinearCombination:
         delay = self.delay
         input_activity = []
         for name in self.gene_names:
-            gene = vfg.get_gene(name)
-            gsi = states.get_gene_state_info(timepoint, delay, gene, tissue)
+            gene = get_gene(name)
+            gsi = states.get_gene_state_info(timepoint=timepoint,
+                                             delay=delay,
+                                             gene=gene,
+                                             tissue=tissue)
             input_level = 0
             if gsi and gsi.active:
                 input_level = gsi.level
@@ -220,8 +222,10 @@ class LogisticActivator:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        gene = vfg.get_gene(self.activator_name)
-        gsi = states.get_gene_state_info(timepoint, delay, gene, tissue)
+        gene = get_gene(self.activator_name)
+        gsi = states.get_gene_state_info(timepoint=timepoint,
+                                         delay=delay,
+                                         gene=gene, tissue=tissue)
 
         if gsi is not None:
             input_level = gsi.level
@@ -276,9 +280,11 @@ class LogisticRepressor:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        activator = vfg.get_gene(self.activator)
-        activator_state = states.get_gene_state_info(timepoint, delay,
-                                                     activator, tissue)
+        activator = get_gene(self.activator)
+        activator_state = states.get_gene_state_info(timepoint=timepoint,
+                                                     delay=delay,
+                                                     gene=activator,
+                                                     tissue=tissue)
 
         # are we activated? if not, then bail early.
         if activator_state is None or activator_state.level == 0 or not activator_state.active:
@@ -287,9 +293,11 @@ class LogisticRepressor:
         # ok, activated - record level and now see if we are repressed...
         activator_level = activator_state.level
 
-        repressor = vfg.get_gene(self.repressor)
-        repressor_state = states.get_gene_state_info(timepoint, delay,
-                                                     repressor, tissue)
+        repressor = get_gene(self.repressor)
+        repressor_state = states.get_gene_state_info(timepoint=timepoint,
+                                                     delay=delay,
+                                                     gene=repressor,
+                                                     tissue=tissue)
 
         if repressor_state is not None:
             repressor_input = repressor_state.level
@@ -368,9 +376,11 @@ class LogisticMultiRepressor:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        activator = vfg.get_gene(self.activator)
-        activator_state = states.get_gene_state_info(timepoint, delay,
-                                                     activator, tissue)
+        activator = get_gene(self.activator)
+        activator_state = states.get_gene_state_info(timepoint=timepoint,
+                                                     delay=delay,
+                                                     gene=activator,
+                                                     tissue=tissue)
 
         # are we activated? if not, then bail early.
         if activator_state is None or activator_state.level == 0 or not activator_state.active:
@@ -382,9 +392,11 @@ class LogisticMultiRepressor:
 
         repressor_sum = 0.
         for repressor, weight in zip(self.repressor_names, self.weights):
-            r = vfg.get_gene(repressor)
-            repressor_state = states.get_gene_state_info(timepoint, delay,
-                                                         r, tissue)
+            r = get_gene(repressor)
+            repressor_state = states.get_gene_state_info(timepoint=timepoint,
+                                                         delay=delay,
+                                                         gene=r,
+                                                         tissue=tissue)
             if repressor_state is not None:
                 repressor_sum += weight*repressor_state.level
             else:

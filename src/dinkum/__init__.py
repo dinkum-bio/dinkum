@@ -13,8 +13,9 @@ import itertools
 import collections
 
 from . import vfg
-from .vfg import GeneStateInfo, DEFAULT_OFF, get_gene
+from .vfg import GeneStateInfo, DEFAULT_OFF, get_gene, Gene
 from . import vfn
+from .vfn import get_tissue, Tissue
 from . import observations
 from . import utils
 from .exceptions import *
@@ -74,10 +75,12 @@ def run_and_display(*args, **kwargs):
     return display_obj
 
 
-class GeneStates:
+class OnlyGeneStates:
     """Gene states.
 
-    A class to contain/manage GeneStateInfo objects for multiple genes."""
+    A class to contain/manage GeneStateInfo objects for multiple genes,
+    at a particular time and in a particular tissue.
+    """
     def __init__(self):
         self.genes_by_name = {}
 
@@ -129,7 +132,7 @@ class TissueAndGeneStateAtTime:
     """
     Hold the gene activity state for multiple tissues at a particular tp.
 
-    Holds multiple tissues, each with their own GeneStates object.
+    Holds multiple tissues, each with their own OnlyGeneStates object.
 
     dict interface supports getting and setting gene activity (value) by
     tissue (key).
@@ -143,13 +146,13 @@ class TissueAndGeneStateAtTime:
         assert time is not None
 
         self._tissues = list(tissues)
-        self._tissues_by_name = {}
+        self._tissues_by_name = {} # @CTB do we need to set from tissues?
         self.time = time
 
     def __setitem__(self, tissue, genes):
         "set Tissue object by name."
         assert tissue in self._tissues
-        assert isinstance(genes, GeneStates)
+        assert isinstance(genes, OnlyGeneStates)
         self._tissues_by_name[tissue.name] = genes
 
     def __getitem__(self, tissue):
@@ -181,8 +184,11 @@ class TissueAndGeneStateAtTime:
 class TissueGeneStates(collections.UserDict):
     """
     Contains (potentially incomplete) set of tissue/gene states for many
-    timepoints. Top-level container. Indexed by timepoint (integer),
-    returns TissueAndGeneStateAtTime objects.
+    timepoints.
+
+    The top-level container.
+
+    Indexed by timepoint (integer), returns TissueAndGeneStateAtTime objects.
     """
     def __init__(self):
         self.data = {}
@@ -201,14 +207,16 @@ class TissueGeneStates(collections.UserDict):
             return True
         return False
 
-    def get_gene_state_info(self, current_tp, delay, gene, tissue):
+    def get_gene_state_info(self, *, timepoint,
+                            delay=0, gene, tissue):
         from .vfg import Gene
 
-        assert int(current_tp)
+        assert int(timepoint)
         delay = int(delay)
         assert isinstance(gene, Gene)
+        assert isinstance(tissue, Tissue)
 
-        check_tp = current_tp - delay
+        check_tp = timepoint - delay
         time_state = self.get(check_tp)
         if time_state:
             return time_state.get_gene_state_info(gene, tissue)
@@ -233,17 +241,28 @@ class TissueGeneStates(collections.UserDict):
 
         gene_state = time_state.get(tissue)
         if gene_state is None:
-            gene_state = GeneStates()
+            gene_state = OnlyGeneStates()
             time_state[tissue] = gene_state
 
         gene_state.set_gene_state(gene=gene, state_info=state_info)
 
-    def to_dataframe(self, gene_names):
+    def to_dataframe(self, gene_names=None):
         """
         Convert to a pandas DataFrame.
         """
         level_rows = []
         active_rows = []
+
+        # extract gene names?
+        all_gene_names = set()
+        if gene_names is None:
+            for (timepoint, state) in self.items():
+                for tissue in state.tissues:
+                    tissue_name = tissue.name
+                    activity = state.get_by_tissue_name(tissue_name)
+                    all_gene_names.update(activity.genes_by_name)
+
+            gene_names = list(sorted(all_gene_names))
 
         for timepoint, tissue_and_gene_sat in self.items():
             timepoint_str = f't={timepoint}'
@@ -254,7 +273,10 @@ class TissueGeneStates(collections.UserDict):
                 active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
                 for gene_name in gene_names:
                     gene = get_gene(gene_name)
-                    gsi = self.get_gene_state_info(timepoint, 0, gene, tissue)
+                    gsi = self.get_gene_state_info(timepoint=timepoint,
+                                                   delay=0,
+                                                   gene=gene,
+                                                   tissue=tissue)
                     level_d[gene_name] = gsi.level
                     active_d[gene_name] = gsi.active
                 level_rows.append(level_d)
@@ -313,7 +335,7 @@ class Timecourse:
 
             for tissue in tissues:
                 seen = set()
-                next_active = GeneStates()
+                next_active = OnlyGeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
                     for gene, state_info in r.advance(timepoint=tp,
@@ -339,10 +361,15 @@ class Timecourse:
                 raise DinkumObservationFailed(state.time)
 
     def get_gene_state(self, tp, tissue_name, gene_name):
+        # @CTB do we use this?
         time_state = self.states_d[tp]
         tissue_state = time_state.get_by_tissue_name(tissue_name)
         gene_state = tissue_state.get_gene_state(gene_name)
         return gene_state
+
+    def get_states(self):
+        return self.states_d
+
 
 def _run(*, start, stop, trace_fn=None, verbose=False):
     "Run a time course. No output by default."

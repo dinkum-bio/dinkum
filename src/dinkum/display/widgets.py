@@ -246,7 +246,10 @@ class TissueActivityPanel_Draw:
 
                 active_color = self.active_color
                 gene_obj = vfg.get_gene(gene_name)
-                gsi = gene_states.get_gene_state_info(tp, 0, gene_obj, tissue_obj)
+                gsi = gene_states.get_gene_state_info(timepoint=tp,
+                                                      delay=0,
+                                                      gene=gene_obj,
+                                                      tissue=tissue_obj)
 
                 # check a few constraints...
                 if gsi.level == 0 and gsi.active and EMIT_WARNINGS:
