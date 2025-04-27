@@ -141,7 +141,7 @@ class LinearCombination:
         d = {}
         for n, w in zip(upstream_names, weights):
             param_name = f'{target_name}_w{n}'
-            params_obj.add(param_name, value=w)
+            params_obj.add(param_name, value=w, min=-20, max=20, brute_step=0.1)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -236,6 +236,7 @@ class LogisticActivator:
         # calc logistic function, centered at midpoint, with k = log(rate/10)
         rate = math.log(self.rate / 10)
         expon = -rate * (input_level - self.midpoint)
+        expon = min(expon, 50)
         denom = 1 + math.exp(expon)
         level = round(100 / denom)
 
@@ -308,6 +309,7 @@ class LogisticRepressor:
         # calc logistic function, centered at midpoint, with k = log(rate/10)
         rate = math.log(self.rate / 10)
         expon = -rate * (repressor_input - self.midpoint)
+        expon = min(expon, 50)
         denom = 1 + math.exp(expon)
         repressor_output = round(100 / denom)
 
@@ -353,7 +355,7 @@ class LogisticMultiRepressor:
         d = {}
         for n, w in zip(upstream_names, weights):
             param_name = f'{target_name}_w{n}'
-            params_obj.add(param_name, value=w)
+            params_obj.add(param_name, value=w, min=-20, max=20, brute_step=0.1)
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -406,6 +408,7 @@ class LogisticMultiRepressor:
         # calc logistic function, centered at midpoint, with k = log(rate/10)
         rate = math.log(self.rate / 10)
         expon = -rate * (repressor_sum - self.midpoint)
+        expon = min(expon, 50)
         denom = 1 + math.exp(expon)
         repressor_output = round(100 / denom)
 

@@ -31,8 +31,7 @@ def reset(*, verbose=True):
 def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
                        verbose=False, save_image=None, trace_fn=None):
     """
-    Run and display the circuit model; wrapper for
-    dinkum.display.tc_record_activity.
+    Run and display the circuit model; for use in Jupyter notebooks.
 
     Key parameter:
     - start (default: 1)
@@ -45,22 +44,23 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
     - 'save_image' - save image to this file.
     - 'canvas_type' - 'ipycanvas' or 'pillow' (default: 'pillow')
     """
-    from dinkum.display import MultiTissuePanel, tc_record_activity
+    from dinkum.display import MultiTissuePanel
     if not gene_names:
         gene_names = vfg.get_gene_names()
     if not tissue_names:
         tissue_names = vfn.get_tissue_names()
 
     try:
-        states = tc_record_activity(start=start,
-                                    stop=stop,
-                                    gene_names=gene_names,
-                                    verbose=verbose,
-                                    trace_fn=trace_fn)
+        tc = _run(start=start,
+                  stop=stop,
+                  verbose=verbose,
+                  trace_fn=trace_fn)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
         return None
+
+    states = tc.get_states()
 
     level_df, active_df = states.to_dataframe(gene_names)
 
@@ -71,6 +71,11 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
 
 
 def run_and_display(*args, **kwargs):
+    display_obj, _level_df, _active_df = run_and_display_df(*args, **kwargs)
+    return display_obj
+
+
+def run_df(*args, **kwargs):
     display_obj, _level_df, _active_df = run_and_display_df(*args, **kwargs)
     return display_obj
 

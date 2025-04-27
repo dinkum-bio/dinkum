@@ -438,3 +438,106 @@ def test_fit_2_decay():
     growth.set_params(res.params)
     assert round(growth.rate, 1) == 1.2
     assert int(growth.initial_level) == 75
+
+
+def test_fit_2_logistic_repressor():
+    # can we fit parameters to given output for LogisticRepressor?
+
+    # first, calculate a response curve
+    dinkum.reset()
+
+    ubiq = Gene(name='ubiq')
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    ubiq.is_present(where=m, start=1)
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom2(LogisticRepressor(rate=92, midpoint=58,
+                                  activator_name='ubiq',
+                                  repressor_name='X'))
+
+    tc = dinkum.run(start=1, stop=20, verbose=True)
+    states = tc.get_states()
+    level_df, _ = states.to_dataframe()
+
+    print(level_df)
+    fit_to_vals = list(level_df['out'])
+    print(fit_to_vals)
+
+    # ok, now, reset and run fit on growth -
+    dinkum.reset()
+
+    ubiq = Gene(name='ubiq')
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    ubiq.is_present(where=m, start=1)
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+
+    logit = LogisticRepressor(activator_name='ubiq',
+                              repressor_name='X')
+    out.custom2(logit)
+
+    # fit!!
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method='brute')
+
+    # extract parameters -
+    print(res.params)
+    logit.set_params(res.params)
+
+    # have some tolerance...
+    assert int(logit.rate) in range(80, 95)
+    assert int(logit.midpoint) in range(55, 65)
+
+
+def test_fit_2_logistic_multi_repressor():
+    # can we fit parameters to given output for LogisticMultiRepressor?
+
+    # first, calculate a response curve
+    dinkum.reset()
+
+    ubiq = Gene(name='ubiq')
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    ubiq.is_present(where=m, start=1)
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom2(LogisticMultiRepressor(rate=92, midpoint=58,
+                                  activator_name='ubiq',
+                                  repressor_names=['X']))
+
+    tc = dinkum.run(start=1, stop=20, verbose=True)
+    states = tc.get_states()
+    level_df, _ = states.to_dataframe()
+
+    print(level_df)
+    fit_to_vals = list(level_df['out'])
+    print(fit_to_vals)
+
+    # ok, now, reset and run fit on growth -
+    dinkum.reset()
+
+    ubiq = Gene(name='ubiq')
+    x = Gene(name='X')
+    out = Gene(name='out')
+    m = Tissue(name='M')
+
+    ubiq.is_present(where=m, start=1)
+    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+
+    logit = LogisticMultiRepressor(activator_name='ubiq',
+                                   repressor_names=['X'])
+    out.custom2(logit)
+
+    # fit!!
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=False, method='brute')
+
+    # extract parameters -
+    print(res.params)
+    logit.set_params(res.params)
+
+    assert int(logit.rate) == 19 # could change?
+    assert round(logit.weights[0], 1) == 0.9
