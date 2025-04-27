@@ -12,12 +12,12 @@ def test_delete_gene():
     # check that 'reset' clears the gene.
     dinkum.reset()
 
-    x = Gene(name='X')
+    x = Gene(name="X")
 
     dinkum.reset()
 
-    m = Tissue(name='M')
-    y = Gene(name='Y')
+    m = Tissue(name="M")
+    y = Gene(name="Y")
 
     # these should both fail
     with pytest.raises(DinkumInvalidGene):
@@ -31,12 +31,12 @@ def test_delete_tissue():
     # check that 'reset' clears the tissue
     dinkum.reset()
 
-    m = Tissue(name='M')
+    m = Tissue(name="M")
 
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
+    x = Gene(name="X")
+    y = Gene(name="Y")
 
     with pytest.raises(DinkumInvalidTissue):
         x.is_present(where=m, start=1)

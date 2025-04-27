@@ -4,10 +4,12 @@ from .widgets import *
 
 from .. import Timecourse, TissueGeneStates, _run
 
-def tc_record_activity(*, start=1, stop=10, gene_names=None, verbose=False,
-                       trace_fn=None):
+
+def tc_record_activity(
+    *, start=1, stop=10, gene_names=None, verbose=False, trace_fn=None
+):
     """Execute time course and return states dictionary.
-    
+
     Legacy notebook function.
     """
     tc = _run(start=start, stop=stop, verbose=verbose, trace_fn=trace_fn)

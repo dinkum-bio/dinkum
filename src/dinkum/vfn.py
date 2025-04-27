@@ -2,34 +2,43 @@
 
 X is-present in celltype/tissue/compartment M at time T
 """
+
 from functools import total_ordering
 
 from . import vfg
 from .exceptions import *
 
 _tissues = []
+
+
 def _add_tissue(t):
     global _tissues
     _tissues.append(t)
 
+
 def get_tissues():
     return list(sorted(_tissues))
 
+
 def get_tissue_names():
-    return list(sorted([ t.name for t in _tissues ]))
+    return list(sorted([t.name for t in _tissues]))
+
 
 def get_tissue(name):
     for t in _tissues:
         if t.name == name:
             return t
 
+
 def reset():
     global _tissues
     _tissues = []
 
+
 def check_is_valid_tissue(t):
     if not t in _tissues:
         raise DinkumInvalidTissue(f"{t.name} is an invalid tissue")
+
 
 @total_ordering
 class Tissue:
@@ -65,4 +74,4 @@ class Tissue:
         assert neighbor
         self.neighbors.add(neighbor)
         if bidirectional:
-            neighbor.neighbors.add(self) # make it bidirectional by default
+            neighbor.neighbors.add(self)  # make it bidirectional by default

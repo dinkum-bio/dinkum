@@ -5,10 +5,18 @@ import dinkum
 from dinkum.exceptions import DinkumInvalidGene
 from dinkum.vfg import Gene, GeneStateInfo
 from dinkum.vfn import Tissue
-from dinkum.vfg2 import (Growth, Decay, LinearCombination, GeneTimecourse,
-                         run_lmfit, LogisticRepressor, LogisticActivator,
-                         calc_response_1d, calc_response_2d,
-                         LogisticMultiRepressor)
+from dinkum.vfg2 import (
+    Growth,
+    Decay,
+    LinearCombination,
+    GeneTimecourse,
+    run_lmfit,
+    LogisticRepressor,
+    LogisticActivator,
+    calc_response_1d,
+    calc_response_2d,
+    LogisticMultiRepressor,
+)
 
 from dinkum import observations
 
@@ -16,26 +24,20 @@ from dinkum import observations
 def test_basic_gene_timecourse():
     dinkum.reset()
 
-    z = Gene(name='Z')
-    m = Tissue(name='M')
+    z = Gene(name="Z")
+    m = Tissue(name="M")
 
     z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
 
-    observations.check_level_is_between(gene='Z',
-                                        time=2,
-                                        tissue='M',
-                                        min_level=33,
-                                        max_level=33)
-    observations.check_level_is_between(gene='Z',
-                                        time=3,
-                                        tissue='M',
-                                        min_level=66,
-                                        max_level=66)
-    observations.check_level_is_between(gene='Z',
-                                        time=4,
-                                        tissue='M',
-                                        min_level=100,
-                                        max_level=100)
+    observations.check_level_is_between(
+        gene="Z", time=2, tissue="M", min_level=33, max_level=33
+    )
+    observations.check_level_is_between(
+        gene="Z", time=3, tissue="M", min_level=66, max_level=66
+    )
+    observations.check_level_is_between(
+        gene="Z", time=4, tissue="M", min_level=100, max_level=100
+    )
 
     dinkum.run(1, 5, verbose=True)
 
@@ -43,36 +45,26 @@ def test_basic_gene_timecourse():
 def test_basic_decay():
     dinkum.reset()
 
-    x = Gene(name='X')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    m = Tissue(name="M")
 
     x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
 
-    observations.check_level_is_between(gene='X',
-                                        time=1,
-                                        tissue='M',
-                                        min_level=100,
-                                        max_level=100)
-    observations.check_level_is_between(gene='X',
-                                        time=2,
-                                        tissue='M',
-                                        min_level=83,
-                                        max_level=84)
-    observations.check_level_is_between(gene='X',
-                                        time=3,
-                                        tissue='M',
-                                        min_level=69,
-                                        max_level=70)
-    observations.check_level_is_between(gene='X',
-                                        time=4,
-                                        tissue='M',
-                                        min_level=57,
-                                        max_level=58)
-    observations.check_level_is_between(gene='X',
-                                        time=5,
-                                        tissue='M',
-                                        min_level=48,
-                                        max_level=49)
+    observations.check_level_is_between(
+        gene="X", time=1, tissue="M", min_level=100, max_level=100
+    )
+    observations.check_level_is_between(
+        gene="X", time=2, tissue="M", min_level=83, max_level=84
+    )
+    observations.check_level_is_between(
+        gene="X", time=3, tissue="M", min_level=69, max_level=70
+    )
+    observations.check_level_is_between(
+        gene="X", time=4, tissue="M", min_level=57, max_level=58
+    )
+    observations.check_level_is_between(
+        gene="X", time=5, tissue="M", min_level=48, max_level=49
+    )
 
     dinkum.run(1, 5, verbose=True)
 
@@ -80,36 +72,26 @@ def test_basic_decay():
 def test_basic_growth():
     dinkum.reset()
 
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     y.custom2(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
 
-    observations.check_level_is_between(gene='Y',
-                                        time=1,
-                                        tissue='M',
-                                        min_level=0,
-                                        max_level=0)
-    observations.check_level_is_between(gene='Y',
-                                        time=2,
-                                        tissue='M',
-                                        min_level=50,
-                                        max_level=50)
-    observations.check_level_is_between(gene='Y',
-                                        time=3,
-                                        tissue='M',
-                                        min_level=75,
-                                        max_level=75)
-    observations.check_level_is_between(gene='Y',
-                                        time=4,
-                                        tissue='M',
-                                        min_level=87,
-                                        max_level=87)
-    observations.check_level_is_between(gene='Y',
-                                        time=5,
-                                        tissue='M',
-                                        min_level=93,
-                                        max_level=93)
+    observations.check_level_is_between(
+        gene="Y", time=1, tissue="M", min_level=0, max_level=0
+    )
+    observations.check_level_is_between(
+        gene="Y", time=2, tissue="M", min_level=50, max_level=50
+    )
+    observations.check_level_is_between(
+        gene="Y", time=3, tissue="M", min_level=75, max_level=75
+    )
+    observations.check_level_is_between(
+        gene="Y", time=4, tissue="M", min_level=87, max_level=87
+    )
+    observations.check_level_is_between(
+        gene="Y", time=5, tissue="M", min_level=93, max_level=93
+    )
 
     dinkum.run(1, 5, verbose=True)
 
@@ -117,47 +99,34 @@ def test_basic_growth():
 def test_basic_linear_combination():
     dinkum.reset()
 
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
-    linear_combination = LinearCombination(weights=[1],
-                                           gene_names=['Z'])
+    linear_combination = LinearCombination(weights=[1], gene_names=["Z"])
     out.custom2(linear_combination)
 
-    observations.check_level_is_between(gene='Z',
-                                        time=2,
-                                        tissue='M',
-                                        min_level=33,
-                                        max_level=33)
-    observations.check_level_is_between(gene='Z',
-                                        time=3,
-                                        tissue='M',
-                                        min_level=66,
-                                        max_level=66)
-    observations.check_level_is_between(gene='Z',
-                                        time=4,
-                                        tissue='M',
-                                        min_level=100,
-                                        max_level=100)
+    observations.check_level_is_between(
+        gene="Z", time=2, tissue="M", min_level=33, max_level=33
+    )
+    observations.check_level_is_between(
+        gene="Z", time=3, tissue="M", min_level=66, max_level=66
+    )
+    observations.check_level_is_between(
+        gene="Z", time=4, tissue="M", min_level=100, max_level=100
+    )
 
     # should exactly mirror 'Z', just one tick later
-    observations.check_level_is_between(gene='out',
-                                        time=3,
-                                        tissue='M',
-                                        min_level=33,
-                                        max_level=33)
-    observations.check_level_is_between(gene='out',
-                                        time=4,
-                                        tissue='M',
-                                        min_level=66,
-                                        max_level=66)
-    observations.check_level_is_between(gene='out',
-                                        time=5,
-                                        tissue='M',
-                                        min_level=100,
-                                        max_level=100)
+    observations.check_level_is_between(
+        gene="out", time=3, tissue="M", min_level=33, max_level=33
+    )
+    observations.check_level_is_between(
+        gene="out", time=4, tissue="M", min_level=66, max_level=66
+    )
+    observations.check_level_is_between(
+        gene="out", time=5, tissue="M", min_level=100, max_level=100
+    )
 
     dinkum.run(1, 5, verbose=True)
 
@@ -165,15 +134,15 @@ def test_basic_linear_combination():
 def test_basic_linear_combination_no_such_gene():
     dinkum.reset()
 
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
-    linear_combination = LinearCombination(weights=[1, .33, .33],
-                                           gene_names=['X', 'Y', 'Z'])
+    linear_combination = LinearCombination(
+        weights=[1, 0.33, 0.33], gene_names=["X", "Y", "Z"]
+    )
     out.custom2(linear_combination)
-
 
     with pytest.raises(DinkumInvalidGene):
         dinkum.run(1, 5, verbose=True)
@@ -182,15 +151,15 @@ def test_basic_linear_combination_no_such_gene():
 def test_logistic_activator():
     dinkum.reset()
 
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
-    out.custom2(LogisticActivator(rate=100, midpoint=50, activator_name='Z'))
+    out.custom2(LogisticActivator(rate=100, midpoint=50, activator_name="Z"))
 
-    xvals, yvals = calc_response_1d(timepoint=2,
-                                    target_gene_name='out',
-                                    variable_gene_name='Z')
+    xvals, yvals = calc_response_1d(
+        timepoint=2, target_gene_name="out", variable_gene_name="Z"
+    )
     assert yvals[0] == 0
     assert yvals[47] == 0
     assert yvals[48] == 1
@@ -205,19 +174,21 @@ def test_logistic_activator():
 def test_logistic_repressor():
     dinkum.reset()
 
-    x = Gene(name='X')
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
-    out.custom2(LogisticRepressor(rate=100, midpoint=50,
-                                  activator_name='X',
-                                  repressor_name='Z'))
+    out.custom2(
+        LogisticRepressor(rate=100, midpoint=50, activator_name="X", repressor_name="Z")
+    )
 
-    xvals, yvals = calc_response_1d(timepoint=2,
-                                    target_gene_name='out',
-                                    variable_gene_name='Z',
-                                    fixed_gene_states={ 'X': GeneStateInfo(100, True) })
+    xvals, yvals = calc_response_1d(
+        timepoint=2,
+        target_gene_name="out",
+        variable_gene_name="Z",
+        fixed_gene_states={"X": GeneStateInfo(100, True)},
+    )
     print(yvals)
     assert yvals[0] == 100
     assert yvals[47] == 100
@@ -233,19 +204,18 @@ def test_logistic_repressor():
 def test_logistic_repressor_2d():
     dinkum.reset()
 
-    x = Gene(name='X')
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
-    out.custom2(LogisticRepressor(rate=100, midpoint=50,
-                                  activator_name='X',
-                                  repressor_name='Z'))
+    out.custom2(
+        LogisticRepressor(rate=100, midpoint=50, activator_name="X", repressor_name="Z")
+    )
 
-    arr = calc_response_2d(timepoint=2,
-                           target_gene_name='out',
-                           x_gene_name='X',
-                           y_gene_name='Z')
+    arr = calc_response_2d(
+        timepoint=2, target_gene_name="out", x_gene_name="X", y_gene_name="Z"
+    )
 
     # test values? @CTB
 
@@ -253,19 +223,23 @@ def test_logistic_repressor_2d():
 def test_logistic_repressor_multi():
     dinkum.reset()
 
-    x = Gene(name='X')
-    z = Gene(name='Z')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
-    out.custom2(LogisticMultiRepressor(rate=100, midpoint=50,
-                                       activator_name='X',
-                                       repressor_names=['Z']))
+    out.custom2(
+        LogisticMultiRepressor(
+            rate=100, midpoint=50, activator_name="X", repressor_names=["Z"]
+        )
+    )
 
-    xvals, yvals = calc_response_1d(timepoint=2,
-                                    target_gene_name='out',
-                                    variable_gene_name='Z',
-                                    fixed_gene_states={ 'X': GeneStateInfo(100, True) })
+    xvals, yvals = calc_response_1d(
+        timepoint=2,
+        target_gene_name="out",
+        variable_gene_name="Z",
+        fixed_gene_states={"X": GeneStateInfo(100, True)},
+    )
     print(yvals)
     assert yvals[0] == 100
     assert yvals[47] == 100
@@ -281,17 +255,17 @@ def test_logistic_repressor_multi():
 def test_fit():
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    z = Gene(name='Z')
-    o = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    z = Gene(name="Z")
+    o = Gene(name="out")
+    m = Tissue(name="M")
 
     x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
     y.custom2(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
     z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
 
-    linear_combination = LinearCombination(gene_names=['X', 'Y', 'Z'])
+    linear_combination = LinearCombination(gene_names=["X", "Y", "Z"])
     o.custom2(linear_combination)
 
     fit_values = [0, 100, 83, 69, 57]
@@ -300,9 +274,9 @@ def test_fit():
 
     p = Parameters()
     linear_combination.get_params(p)
-    assert round(p['out_wX'].value, 2) == 1.00
-    assert round(p['out_wY'].value, 2) == 0.00
-    assert round(p['out_wZ'].value, 2) == -0.01
+    assert round(p["out_wX"].value, 2) == 1.00
+    assert round(p["out_wY"].value, 2) == 0.00
+    assert round(p["out_wZ"].value, 2) == -0.01
 
 
 def test_fit_2_logistic_activator():
@@ -311,35 +285,35 @@ def test_fit_2_logistic_activator():
     # first, calculate a response curve
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticActivator(rate=92, midpoint=58, activator_name='X'))
+    out.custom2(LogisticActivator(rate=92, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
     level_df, _ = states.to_dataframe()
 
     print(level_df)
-    fit_to_vals = list(level_df['out'])
+    fit_to_vals = list(level_df["out"])
     print(fit_to_vals)
 
     # ok, now, reset and run fit on growth -
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
-    logit = LogisticActivator(activator_name='X')
+    logit = LogisticActivator(activator_name="X")
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method='brute')
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -356,37 +330,37 @@ def test_fit_2_growth():
     # first, calculate a response curve
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name='X'))
+    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
     level_df, _ = states.to_dataframe()
 
     print(level_df)
-    fit_to_vals = list(level_df['out'])
+    fit_to_vals = list(level_df["out"])
     print(fit_to_vals)
 
     # ok, now, reset and run fit on growth -
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     # use incorrect params for Growth
     growth = Growth(start_time=1, rate=1, initial_level=50, tissue=m)
     x.custom2(growth)
 
-    logit = LogisticActivator(rate=11, midpoint=58, activator_name='X')
+    logit = LogisticActivator(rate=11, midpoint=58, activator_name="X")
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method='brute')
+    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -401,37 +375,37 @@ def test_fit_2_decay():
     # first, calculate a response curve
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
-    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name='X'))
+    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
     level_df, _ = states.to_dataframe()
 
     print(level_df)
-    fit_to_vals = list(level_df['out'])
+    fit_to_vals = list(level_df["out"])
     print(fit_to_vals)
 
     # ok, now, reset and run fit on growth -
     dinkum.reset()
 
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     # use incorrect params for Growth
     growth = Decay(start_time=1, rate=1, initial_level=50, tissue=m)
     x.custom2(growth)
 
-    logit = LogisticActivator(rate=11, midpoint=58, activator_name='X')
+    logit = LogisticActivator(rate=11, midpoint=58, activator_name="X")
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method='brute')
+    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -446,42 +420,43 @@ def test_fit_2_logistic_repressor():
     # first, calculate a response curve
     dinkum.reset()
 
-    ubiq = Gene(name='ubiq')
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    ubiq = Gene(name="ubiq")
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticRepressor(rate=92, midpoint=58,
-                                  activator_name='ubiq',
-                                  repressor_name='X'))
+    out.custom2(
+        LogisticRepressor(
+            rate=92, midpoint=58, activator_name="ubiq", repressor_name="X"
+        )
+    )
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
     level_df, _ = states.to_dataframe()
 
     print(level_df)
-    fit_to_vals = list(level_df['out'])
+    fit_to_vals = list(level_df["out"])
     print(fit_to_vals)
 
     # ok, now, reset and run fit on growth -
     dinkum.reset()
 
-    ubiq = Gene(name='ubiq')
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    ubiq = Gene(name="ubiq")
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
-    logit = LogisticRepressor(activator_name='ubiq',
-                              repressor_name='X')
+    logit = LogisticRepressor(activator_name="ubiq", repressor_name="X")
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method='brute')
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -498,46 +473,47 @@ def test_fit_2_logistic_multi_repressor():
     # first, calculate a response curve
     dinkum.reset()
 
-    ubiq = Gene(name='ubiq')
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    ubiq = Gene(name="ubiq")
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticMultiRepressor(rate=92, midpoint=58,
-                                  activator_name='ubiq',
-                                  repressor_names=['X']))
+    out.custom2(
+        LogisticMultiRepressor(
+            rate=92, midpoint=58, activator_name="ubiq", repressor_names=["X"]
+        )
+    )
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
     level_df, _ = states.to_dataframe()
 
     print(level_df)
-    fit_to_vals = list(level_df['out'])
+    fit_to_vals = list(level_df["out"])
     print(fit_to_vals)
 
     # ok, now, reset and run fit on growth -
     dinkum.reset()
 
-    ubiq = Gene(name='ubiq')
-    x = Gene(name='X')
-    out = Gene(name='out')
-    m = Tissue(name='M')
+    ubiq = Gene(name="ubiq")
+    x = Gene(name="X")
+    out = Gene(name="out")
+    m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
     x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
-    logit = LogisticMultiRepressor(activator_name='ubiq',
-                                   repressor_names=['X'])
+    logit = LogisticMultiRepressor(activator_name="ubiq", repressor_names=["X"])
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=False, method='brute')
+    res = run_lmfit(1, 20, fit_to_vals, [out], debug=False, method="brute")
 
     # extract parameters -
     print(res.params)
     logit.set_params(res.params)
 
-    assert int(logit.rate) == 19 # could change?
+    assert int(logit.rate) == 19  # could change?
     assert round(logit.weights[0], 1) == 0.9

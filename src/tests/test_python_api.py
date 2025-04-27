@@ -11,8 +11,8 @@ from dinkum.exceptions import *
 def test_1():
     dinkum.reset()
 
-    x = Gene(name='X')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    m = Tissue(name="M")
     x.is_present(where=m, start=1, duration=1)
 
     # run time course
@@ -28,10 +28,9 @@ def test_1():
 def test_2():
     dinkum.reset()
 
-    x = Gene(name='X')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    m = Tissue(name="M")
     x.is_present(where=m, start=1, duration=1)
 
     # run time course
-    display_fn, level_df, active_df = dinkum.run_and_display_df(start=1,
-                                                                stop=5)
+    display_fn, level_df, active_df = dinkum.run_and_display_df(start=1, stop=5)

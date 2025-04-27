@@ -1,9 +1,9 @@
 .PHONY: dist nbconvert
 
-all:
-	./simple.py
-	./simple2.py
-	./simple3.py
+all: test
+
+format:
+	black src
 
 test:
 	pytest --cov --cov-report=html:coverage_report

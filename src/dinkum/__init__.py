@@ -3,6 +3,7 @@ Top-level dinkum module.
 
 Contains core execution information.
 """
+
 import sys
 from importlib.metadata import version
 import pandas as pd
@@ -20,6 +21,7 @@ from . import observations
 from . import utils
 from .exceptions import *
 
+
 def reset(*, verbose=True):
     vfg.reset()
     vfn.reset()
@@ -28,8 +30,16 @@ def reset(*, verbose=True):
         print(f"initializing: dinkum v{__version__}")
 
 
-def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
-                       verbose=False, save_image=None, trace_fn=None):
+def run_and_display_df(
+    *,
+    start=1,
+    stop=10,
+    gene_names=None,
+    tissue_names=None,
+    verbose=False,
+    save_image=None,
+    trace_fn=None,
+):
     """
     Run and display the circuit model; for use in Jupyter notebooks.
 
@@ -45,16 +55,14 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
     - 'canvas_type' - 'ipycanvas' or 'pillow' (default: 'pillow')
     """
     from dinkum.display import MultiTissuePanel
+
     if not gene_names:
         gene_names = vfg.get_gene_names()
     if not tissue_names:
         tissue_names = vfn.get_tissue_names()
 
     try:
-        tc = _run(start=start,
-                  stop=stop,
-                  verbose=verbose,
-                  trace_fn=trace_fn)
+        tc = _run(start=start, stop=stop, verbose=verbose, trace_fn=trace_fn)
     except DinkumException as e:
         print(f"ERROR: {str(e)}", file=sys.stderr)
         print("Halting execution.", file=sys.stderr)
@@ -64,9 +72,12 @@ def run_and_display_df(*, start=1, stop=10, gene_names=None, tissue_names=None,
 
     level_df, active_df = states.to_dataframe(gene_names)
 
-    mp = MultiTissuePanel(states=states, tissue_names=tissue_names,
-                          gene_names=gene_names,
-                          save_image=save_image)
+    mp = MultiTissuePanel(
+        states=states,
+        tissue_names=tissue_names,
+        gene_names=gene_names,
+        save_image=save_image,
+    )
     return mp.draw(states), level_df, active_df
 
 
@@ -86,6 +97,7 @@ class OnlyGeneStates:
     A class to contain/manage GeneStateInfo objects for multiple genes,
     at a particular time and in a particular tissue.
     """
+
     def __init__(self):
         self.genes_by_name = {}
 
@@ -146,12 +158,13 @@ class TissueAndGeneStateAtTime:
 
     `is_active(gene, tissue)` returns True/False around activity.
     """
+
     def __init__(self, *, tissues=None, time=None):
         assert tissues is not None
         assert time is not None
 
         self._tissues = list(tissues)
-        self._tissues_by_name = {} # @CTB do we need to set from tissues?
+        self._tissues_by_name = {}  # @CTB do we need to set from tissues?
         self.time = time
 
     def __setitem__(self, tissue, genes):
@@ -195,6 +208,7 @@ class TissueGeneStates(collections.UserDict):
 
     Indexed by timepoint (integer), returns TissueAndGeneStateAtTime objects.
     """
+
     def __init__(self):
         self.data = {}
 
@@ -212,8 +226,7 @@ class TissueGeneStates(collections.UserDict):
             return True
         return False
 
-    def get_gene_state_info(self, *, timepoint,
-                            delay=0, gene, tissue):
+    def get_gene_state_info(self, *, timepoint, delay=0, gene, tissue):
         from .vfg import Gene
 
         assert int(timepoint)
@@ -227,8 +240,9 @@ class TissueGeneStates(collections.UserDict):
             return time_state.get_gene_state_info(gene, tissue)
         return None
 
-    def set_gene_state(self, *, timepoint=None, tissue_name=None,
-                       gene_name=None, state_info=None):
+    def set_gene_state(
+        self, *, timepoint=None, tissue_name=None, gene_name=None, state_info=None
+    ):
         assert timepoint is not None
         assert tissue_name is not None
         assert gene_name is not None
@@ -240,8 +254,7 @@ class TissueGeneStates(collections.UserDict):
 
         time_state = self.get(timepoint)
         if time_state is None:
-            time_state = TissueAndGeneStateAtTime(tissues=[tissue],
-                                                  time=timepoint)
+            time_state = TissueAndGeneStateAtTime(tissues=[tissue], time=timepoint)
             self.data[timepoint] = time_state
 
         gene_state = time_state.get(tissue)
@@ -261,7 +274,7 @@ class TissueGeneStates(collections.UserDict):
         # extract gene names?
         all_gene_names = set()
         if gene_names is None:
-            for (timepoint, state) in self.items():
+            for timepoint, state in self.items():
                 for tissue in state.tissues:
                     tissue_name = tissue.name
                     activity = state.get_by_tissue_name(tissue_name)
@@ -270,25 +283,28 @@ class TissueGeneStates(collections.UserDict):
             gene_names = list(sorted(all_gene_names))
 
         for timepoint, tissue_and_gene_sat in self.items():
-            timepoint_str = f't={timepoint}'
+            timepoint_str = f"t={timepoint}"
 
             # for each tissue, get level of each gene
             for tissue in tissue_and_gene_sat.tissues:
-                level_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
-                active_d = dict(tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str)
+                level_d = dict(
+                    tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str
+                )
+                active_d = dict(
+                    tissue=tissue.name, timepoint=timepoint, timepoint_str=timepoint_str
+                )
                 for gene_name in gene_names:
                     gene = get_gene(gene_name)
-                    gsi = self.get_gene_state_info(timepoint=timepoint,
-                                                   delay=0,
-                                                   gene=gene,
-                                                   tissue=tissue)
+                    gsi = self.get_gene_state_info(
+                        timepoint=timepoint, delay=0, gene=gene, tissue=tissue
+                    )
                     level_d[gene_name] = gsi.level
                     active_d[gene_name] = gsi.active
                 level_rows.append(level_d)
                 active_rows.append(active_d)
 
-        level_df = pd.DataFrame.from_dict(level_rows).set_index('timepoint')
-        active_df = pd.DataFrame.from_dict(active_rows).set_index('timepoint')
+        level_df = pd.DataFrame.from_dict(level_rows).set_index("timepoint")
+        active_df = pd.DataFrame.from_dict(active_rows).set_index("timepoint")
 
         return level_df, active_df
 
@@ -298,11 +314,12 @@ class Timecourse:
     Run and record a time course for a system b/t two time points,
     start and stop.
     """
+
     def __init__(self, *, start=None, stop=None, trace_fn=None):
         assert start is not None
         assert stop is not None
 
-        print(f'start={start} stop={stop}')
+        print(f"start={start} stop={stop}")
 
         self.start = start
         self.stop = stop
@@ -330,7 +347,7 @@ class Timecourse:
             print(f"got {len(tissues)} tissues.")
             for t in tissues:
                 print(f"\ttissue {t.name}")
-            print('')
+            print("")
 
         # advance one tick at a time
         this_state = {}
@@ -343,15 +360,15 @@ class Timecourse:
                 next_active = OnlyGeneStates()
                 for r in vfg.get_rules():
                     # advance state of all genes based on last state
-                    for gene, state_info in r.advance(timepoint=tp,
-                                                      states=self.states_d,
-                                                      tissue=tissue):
+                    for gene, state_info in r.advance(
+                        timepoint=tp, states=self.states_d, tissue=tissue
+                    ):
 
-                        next_active.set_gene_state(gene=gene,
-                                                   state_info=state_info)
+                        next_active.set_gene_state(gene=gene, state_info=state_info)
                         if trace_fn:
-                            trace_fn(tp=tp, tissue=tissue,
-                                     gene=gene, state_info=state_info)
+                            trace_fn(
+                                tp=tp, tissue=tissue, gene=gene, state_info=state_info
+                            )
 
                 next_state[tissue] = next_active
 
@@ -375,7 +392,7 @@ def _run(*, start, stop, trace_fn=None, verbose=False):
     tc.run(verbose=verbose)
     tc.check()
     return tc
-    
+
 
 def run(start, stop, *, verbose=False, trace_fn=None):
     """Run a time course in 'headless' mode - minimal output.
