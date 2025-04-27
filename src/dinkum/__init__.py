@@ -360,13 +360,6 @@ class Timecourse:
             if not observations.test_observations(state):
                 raise DinkumObservationFailed(state.time)
 
-    def get_gene_state(self, tp, tissue_name, gene_name):
-        # @CTB do we use this?
-        time_state = self.states_d[tp]
-        tissue_state = time_state.get_by_tissue_name(tissue_name)
-        gene_state = tissue_state.get_gene_state(gene_name)
-        return gene_state
-
     def get_states(self):
         return self.states_d
 
