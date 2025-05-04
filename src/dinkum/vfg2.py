@@ -4,6 +4,7 @@ import math
 
 from dinkum import vfg, Timecourse, TissueGeneStates, get_tissue, get_gene
 from dinkum.vfg import GeneStateInfo
+from itertools import chain
 
 # @CTB prevent set_gene from being called multiple times
 
@@ -351,11 +352,17 @@ class LogisticRepressor2:
     def set_params(self, params_obj):
         target_name = self.target.name
 
-        param_name = f"{target_name}_rate"
-        self.rate = params_obj[param_name].value
+        param_name = f"{target_name}_activator_rate"
+        self.activator_rate = params_obj[param_name].value
 
-        param_name = f"{target_name}_midpoint"
-        self.midpoint = params_obj[param_name].value
+        param_name = f"{target_name}_activator_midpoint"
+        self.activator_midpoint = params_obj[param_name].value
+
+        param_name = f"{target_name}_repressor_rate"
+        self.repressor_rate = params_obj[param_name].value
+
+        param_name = f"{target_name}_repressor_midpoint"
+        self.repressor_midpoint = params_obj[param_name].value
 
     def set_gene(self, gene):
         self.target = gene
@@ -518,7 +525,7 @@ def get_ix2_for_gene_name(gene_name):
             yield ix
 
 
-def run_lmfit(start, stop, fit_values, fit_genes, *, debug=False, method="leastsq"):
+def run_lmfit(start, stop, *, fit_values, fit_genes, debug=False, method="leastsq"):
     for g in fit_genes:
         assert isinstance(g, vfg.Gene)
 
@@ -591,9 +598,37 @@ def run_lmfit(start, stop, fit_values, fit_genes, *, debug=False, method="leasts
     return res
 
 
+def run_lmfit2(start, stop, *, debug=False, method='leastsq', **kwargs):
+    fit_genes = {}
+    for gene_name in vfg.get_gene_names():
+        val = kwargs.get(gene_name)
+        if val is not None:
+            fit_genes[gene_name] = val
+    if not len(fit_genes):
+        raise Exception("error! no genes to fit!?")
+    if len(kwargs) != len(fit_genes):
+        raise Exception("error! incorrect genes names given??")
+    
+    print(f"found {len(fit_genes)} genes to fit: {', '.join(fit_genes)}")
+    fit_vals = []
+
+    fit_gobj = []
+    for k, timecourse in fit_genes.items():
+        n_leading = timecourse.start_time - start
+        n_trailing = stop - (len(timecourse.values) + n_leading)
+        print(n_leading, n_trailing, len(timecourse.values))
+        assert n_leading + n_trailing + len(timecourse.values) == stop - start + 1
+        fit_vals.append([0]*n_leading + list(timecourse.values) + [0]*n_trailing)
+        fit_gobj.append(vfg.get_gene(k))
+
+    # flatten values
+    fit_vals = list(chain.from_iterable(zip(*fit_vals)))
+    return run_lmfit(start, stop, fit_values=fit_vals, fit_genes=fit_gobj, debug=debug, method=method)
+
+
 def calc_response_1d(
     *,
-    timepoint,
+    timepoint=1,
     target_gene_name,
     variable_gene_name,
     fixed_gene_states={},
@@ -654,7 +689,7 @@ def calc_response_1d(
 
 def calc_response_2d(
     *,
-    timepoint,
+    timepoint=1,
     target_gene_name,
     x_gene_name,
     y_gene_name,
