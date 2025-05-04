@@ -9,7 +9,7 @@ from dinkum.vfg import GeneStateInfo
 
 
 class Decay:
-    def __init__(self, *, start_time, rate, initial_level, tissue):
+    def __init__(self, *, start_time=1, rate, initial_level=100, tissue):
         self.start_time = start_time
         self.rate = rate
         self.initial_level = initial_level
@@ -50,7 +50,7 @@ class Decay:
 
 
 class Growth:
-    def __init__(self, *, start_time, rate, initial_level, tissue):
+    def __init__(self, *, start_time=1, rate, initial_level=0, tissue):
         self.start_time = start_time
         self.rate = rate
         self.initial_level = initial_level
@@ -309,6 +309,90 @@ class LogisticRepressor:
         # calc logistic function, centered at midpoint, with k = log(rate/10)
         rate = math.log(self.rate / 10)
         expon = -rate * (repressor_input - self.midpoint)
+        expon = min(expon, 50)
+        denom = 1 + math.exp(expon)
+        repressor_output = round(100 / denom)
+
+        # are we repressed?
+        level2 = max(activator_level - repressor_output, 0)
+        return self.target, GeneStateInfo(level2, True)
+
+
+class LogisticRepressor2:
+    """Logistic function: activate if activator, unless repressor
+    above threshold. Both activation and repression are switch-like"""
+
+    def __init__(
+            self, *, activator_rate=11, repressor_rate=11, activator_midpoint=25, activator_name, repressor_midpoint=75, repressor_name, delay=1
+    ):
+        self.activator_rate = activator_rate
+        self.repressor_rate = repressor_rate
+        self.activator_midpoint = activator_midpoint
+        self.repressor_midpoint = repressor_midpoint
+        self.delay = delay
+        self.activator = activator_name
+        self.repressor = repressor_name
+
+    def get_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f"{target_name}_activator_rate"
+        params_obj.add(param_name, value=float(self.activator_rate), min=11, max=100, brute_step=1)
+
+        param_name = f"{target_name}_activator_midpoint"
+        params_obj.add(param_name, value=float(self.activator_midpoint), min=0, max=100, brute_step=1)
+
+        param_name = f"{target_name}_repressor_rate"
+        params_obj.add(param_name, value=float(self.repressor_rate), min=11, max=100, brute_step=1)
+
+        param_name = f"{target_name}_repressor_midpoint"
+        params_obj.add(param_name, value=float(self.repressor_midpoint), min=0, max=100, brute_step=1)
+
+    def set_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f"{target_name}_rate"
+        self.rate = params_obj[param_name].value
+
+        param_name = f"{target_name}_midpoint"
+        self.midpoint = params_obj[param_name].value
+
+    def set_gene(self, gene):
+        self.target = gene
+
+    def advance(self, timepoint, states, tissue):
+        delay = self.delay
+
+        activator = get_gene(self.activator)
+        activator_state = states.get_gene_state_info(
+            timepoint=timepoint, delay=delay, gene=activator, tissue=tissue
+        )
+
+        # are we activated? if not, then bail early.
+        activator_level = 0
+        if activator_state:
+            activator_level = activator_state.level
+
+        # calc activator logistic function, centered at midpoint, with k = log(rate/10)
+        rate = math.log(self.activator_rate / 10)
+        expon = -rate * (activator_level - self.activator_midpoint)
+        expon = min(expon, 50)
+        denom = 1 + math.exp(expon)
+        activator_level = round(100 / denom)
+
+        # now get repressor level
+        repressor = get_gene(self.repressor)
+        repressor_state = states.get_gene_state_info(
+            timepoint=timepoint, delay=delay, gene=repressor, tissue=tissue
+        )
+
+        repressor_input = 0
+        if repressor_state is not None:
+            repressor_input = repressor_state.level
+
+        # calc logistic function, centered at midpoint, with k = log(rate/10)
+        rate = math.log(self.repressor_rate / 10)
+        expon = -rate * (repressor_input - self.repressor_midpoint)
         expon = min(expon, 50)
         denom = 1 + math.exp(expon)
         repressor_output = round(100 / denom)

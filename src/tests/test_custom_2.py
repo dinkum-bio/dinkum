@@ -16,6 +16,7 @@ from dinkum.vfg2 import (
     calc_response_1d,
     calc_response_2d,
     LogisticMultiRepressor,
+    LogisticRepressor2
 )
 
 from dinkum import observations
@@ -40,6 +41,15 @@ def test_basic_gene_timecourse():
     )
 
     dinkum.run(1, 5, verbose=True)
+
+
+def test_decay_defaults():
+    dinkum.reset()
+
+    m = Tissue(name="M")
+    fn = Decay(rate=1.2, tissue=m)
+    assert fn.initial_level == 100
+    assert fn.start_time == 1
 
 
 def test_basic_decay():
@@ -67,6 +77,15 @@ def test_basic_decay():
     )
 
     dinkum.run(1, 5, verbose=True)
+
+
+def test_growth_defaults():
+    dinkum.reset()
+
+    m = Tissue(name="M")
+    fn = Growth(rate=.25, tissue=m)
+    assert fn.initial_level == 0
+    assert fn.start_time == 1
 
 
 def test_basic_growth():
@@ -148,6 +167,14 @@ def test_basic_linear_combination_no_such_gene():
         dinkum.run(1, 5, verbose=True)
 
 
+def test_logistic_activator_defaults():
+    dinkum.reset()
+
+    logit = LogisticActivator(activator_name="Z")
+    assert logit.rate == 11
+    assert logit.midpoint == 50
+
+
 def test_logistic_activator():
     dinkum.reset()
 
@@ -169,6 +196,14 @@ def test_logistic_activator():
     assert yvals[52] == 99
     assert yvals[53] == 100
     assert yvals[100] == 100
+
+
+def test_logistic_repressor_defaults():
+    dinkum.reset()
+
+    logit = LogisticRepressor(activator_name="Z", repressor_name="X")
+    assert logit.rate == 11
+    assert logit.midpoint == 50
 
 
 def test_logistic_repressor():
@@ -216,6 +251,68 @@ def test_logistic_repressor_2d():
     arr = calc_response_2d(
         timepoint=2, target_gene_name="out", x_gene_name="X", y_gene_name="Z"
     )
+
+    # test values? @CTB
+
+
+def test_logistic_repressor2_defaults():
+    dinkum.reset()
+
+    logit = LogisticRepressor2(activator_name="Z", repressor_name="X")
+    assert logit.activator_rate == 11
+    assert logit.activator_midpoint == 25
+    assert logit.repressor_rate == 11
+    assert logit.repressor_midpoint == 75
+
+
+def test_logistic_repressor2():
+    dinkum.reset()
+
+    x = Gene(name="X")
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
+
+    out.custom2(
+        LogisticRepressor2(activator_rate=100,
+                          activator_name="X",
+                          repressor_rate=100,
+                          repressor_name="Z")
+    )
+
+    xvals, yvals = calc_response_1d(
+        timepoint=2,
+        target_gene_name="out",
+        variable_gene_name="Z",
+        fixed_gene_states={"X": GeneStateInfo(100, True)},
+    )
+    print(yvals)
+    assert yvals[50] == 100
+    assert yvals[80] == 0
+
+
+def test_logistic_repressor2_2d():
+    dinkum.reset()
+
+    x = Gene(name="X")
+    z = Gene(name="Z")
+    out = Gene(name="out")
+    m = Tissue(name="M")
+
+    out.custom2(
+        LogisticRepressor2(activator_rate=100,
+                          activator_name="X",
+                          repressor_rate=100,
+                          repressor_name="Z")
+    )
+
+    arr = calc_response_2d(
+        timepoint=2, target_gene_name="out", x_gene_name="X", y_gene_name="Z"
+    )
+    assert arr[0, 0] == 0
+    assert arr[25, 30] == 100
+    assert arr[100, 100] == 0
+    assert arr[100, 25] == 0
 
     # test values? @CTB
 
