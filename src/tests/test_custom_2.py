@@ -367,7 +367,7 @@ def test_fit():
 
     fit_values = [0, 100, 83, 69, 57]
 
-    run_lmfit(1, 5, fit_values, [o], debug=True)
+    run_lmfit(1, 5, fit_values=fit_values, fit_genes=[o], debug=True)
 
     p = Parameters()
     linear_combination.get_params(p)
@@ -410,7 +410,7 @@ def test_fit_2_logistic_activator():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method="brute")
+    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -457,7 +457,7 @@ def test_fit_2_growth():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method="brute")
+    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -502,7 +502,7 @@ def test_fit_2_decay():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [x], debug=True, method="brute")
+    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -553,7 +553,7 @@ def test_fit_2_logistic_repressor():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=True, method="brute")
+    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute")
 
     # extract parameters -
     print(res.params)
@@ -606,7 +606,7 @@ def test_fit_2_logistic_multi_repressor():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_to_vals, [out], debug=False, method="brute")
+    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=False, method="brute")
 
     # extract parameters -
     print(res.params)
