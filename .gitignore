@@ -3,3 +3,4 @@ __pycache__
 src/dinkum_bio.egg-info
 dist
 .DS_Store
+.coverage

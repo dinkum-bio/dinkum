@@ -1,9 +1,12 @@
-.PHONY: dist nbconvert
+.PHONY: dist nbconvert book
 
-all:
-	./simple.py
-	./simple2.py
-	./simple3.py
+all: test
+
+format:
+	black src
+
+book:
+	jupyter-book build book --kernel ipykernel
 
 test:
 	pytest --cov --cov-report=html:coverage_report

@@ -1,5 +1,6 @@
 _debug = False
 
+
 def set_debug(state):
     global _debug
     _debug = bool(state)
