@@ -6,7 +6,7 @@ format:
 	black src
 
 book:
-	jupyter-book build book --kernel ipykernel
+	jupyter-book build book
 
 test:
 	pytest --cov --cov-report=html:coverage_report
