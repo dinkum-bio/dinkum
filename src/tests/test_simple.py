@@ -124,7 +124,7 @@ def test_simple_repression():
     x.is_present(where=m, start=1)
 
     # run!
-    dinkum.run(1, 5)
+    dinkum.run(1, 5, verbose=True)
 
 
 def test_simple_multiple_tissues():
@@ -255,7 +255,7 @@ def test_simple_coherent_feed_forward():
     x.is_present(where=m, start=1)
 
     # run!
-    dinkum.run(1, 5)
+    dinkum.run(1, 5, verbose=True)
 
 
 def test_simple_incoherent_feed_forward():
@@ -437,15 +437,16 @@ def test_delayed_activation_trace():
         assert tp is not None
         assert tissue is not None
 
-        x.append((gene, state_info, tp, tissue))
+        x.append((tp, gene, state_info, tissue))
 
     # run!
     dinkum.run(start=1, stop=5, trace_fn=trace_me)
 
-    assert len(x) == 8
+    x.sort()
     print(x)
+    assert len(x) == 10, len(x)
 
-    gene, state_info, tp, tissue = x[0]
+    tp, gene, state_info, tissue = x[0]
     assert gene.name == "X"
     assert str(state_info) == "<level=100,active=True>"
     assert tissue.name == "M"

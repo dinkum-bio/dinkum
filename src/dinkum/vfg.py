@@ -97,6 +97,21 @@ def _retrieve_ligands(timepoint, states, tissue, delay):
     return ligands
 
 
+def check_ligand(*, dest, timepoint, states, tissue, delay):
+    """If this is a receptor, check that ligand is in neighboring tissue,
+    and return True if it is, False else.
+
+    Otherwise, return True.
+    """
+    if dest.is_receptor:
+        ligands_in_neighbors = _retrieve_ligands(timepoint, states, tissue, delay)
+        if dest._set_ligand in ligands_in_neighbors:
+            return True
+        return False
+    else:
+        return True  # by default, not ligand => is active
+
+
 class CustomActivation:
     def __init__(self, *, input_genes=None):
         # only support explicit kwargs on __call__,
@@ -533,10 +548,13 @@ class Gene:
             return self.present()
 
     def activated_by(self, *, source=None, delay=1):
+        from .vfg2 import Activator
         check_is_valid_gene(self)
-        check_is_valid_gene(source)
-        ix = Interaction_Activates(source=source, dest=self, delay=delay)
-        _add_rule(ix)
+        check_is_tf(source)
+        self.custom2(Activator(rate=100, activator_name=source.name,
+                               delay=delay))
+        #ix = Interaction_Activates(source=source, dest=self, delay=delay)
+        #_add_rule(ix)
 
     def activated_by_or(self, *, sources=None, delay=1):
         ix = Interaction_Or(sources=sources, dest=self, delay=delay)
@@ -545,16 +563,24 @@ class Gene:
     activated_or = activated_by_or
 
     def and_not(self, *, activator=None, repressor=None, delay=1):
-        ix = Interaction_AndNot(
-            source=activator, repressor=repressor, dest=self, delay=delay
-        )
-        _add_rule(ix)
+        #ix = Interaction_AndNot(
+        #    source=activator, repressor=repressor, dest=self, delay=delay
+        #)
+        #_add_rule(ix)
+        from .vfg2 import Repressor
+        check_is_valid_gene(self)
+        check_is_tf(activator)
+        check_is_tf(repressor)
+        self.custom2(Repressor(activator_name=activator.name,
+                               repressor_name=repressor.name,
+                               delay=delay, repressor_rate=100, activator_rate=100))
 
     def activated_by_and(self, *, sources, delay=1):
         ix = Interaction_And(sources=sources, dest=self, delay=delay)
         _add_rule(ix)
 
     def toggle_repressed(self, *, tf=None, cofactor=None, delay=1):
+        # @CTB deprecate/remove?
         ix = Interaction_ToggleRepressed(
             tf=tf, cofactor=cofactor, dest=self, delay=delay
         )

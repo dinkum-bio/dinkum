@@ -371,6 +371,8 @@ class Timecourse:
                             )
 
                 next_state[tissue] = next_active
+                if verbose:
+                    print(tp, next_active)
 
             # advance => next state
             self.states_d[tp] = next_state
