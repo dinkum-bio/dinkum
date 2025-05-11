@@ -241,6 +241,8 @@ class LogisticActivator:
 
         return self.target, GeneStateInfo(level, True)
 
+Activator = LogisticActivator
+
 
 class LogisticRepressor:
     """Logistic function: activate if activator, unless repressor
@@ -407,6 +409,8 @@ class LogisticRepressor2:
         # are we repressed?
         level2 = max(activator_level - repressor_output, 0)
         return self.target, GeneStateInfo(level2, True)
+
+Repressor = LogisticRepressor2
 
 
 class LogisticMultiRepressor:
