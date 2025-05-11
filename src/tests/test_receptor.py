@@ -244,9 +244,6 @@ def test_signaling_ligand_is_not_direct():
     with pytest.raises(DinkumNotATranscriptionFactor):
         a.and_not(activator=a, repressor=x)
 
-    with pytest.raises(DinkumNotATranscriptionFactor):
-        a.toggle_repressed(tf=x)
-
 
 def test_signaling_ligand_is_not_direct_custom():
     # check that ligands can't directly activate in custom activation fn

@@ -272,6 +272,97 @@ class LogisticActivator:
 Activator = LogisticActivator
 
 
+class LogisticMultiActivator:
+    """Logistic function: combine multiple (weighted) inputs, activate
+    if logistic function is above threshold.
+
+    Can be used for AND and OR both
+    """
+
+    def __init__(
+        self,
+        *,
+        rate=11,
+        midpoint=50,
+        activator_names,
+        weights=None,
+        delay=1,
+    ):
+        self.rate = rate
+        self.midpoint = midpoint
+        self.delay = delay
+        self.activator_names = activator_names
+
+        # default weights to 1 for each input, if not specified
+        if weights is None:
+            weights = [1] * len(activator_names)
+
+        assert len(weights) == len(activator_names)
+        self.weights = weights
+
+    def get_params(self, params_obj):
+        target_name = self.target.name
+        rate = float(self.rate)
+
+        param_name = f"{target_name}_rate"
+        params_obj.add(param_name, value=self.rate, min=11, max=100, brute_step=1)
+
+        # no need to adjust midpoint here; adjusting the weights can suffice.
+        upstream_names = self.activator_names
+
+        weights = self.weights
+        if weights is None:
+            weights = [1] * len(upstream_names)
+
+        d = {}
+        for n, w in zip(upstream_names, weights):
+            param_name = f"{target_name}_w{n}"
+            params_obj.add(param_name, value=w, min=-20, max=20, brute_step=0.1)
+
+    def set_params(self, params_obj):
+        target_name = self.target.name
+
+        param_name = f"{target_name}_rate"
+        self.rate = params_obj[param_name].value
+
+        upstream_names = self.activator_names
+
+        weights = []
+        d = {}
+        for n in upstream_names:
+            param_name = f"{target_name}_w{n}"
+            val = params_obj[param_name].value
+            weights.append(val)
+        self.weights = weights
+
+    def set_gene(self, gene):
+        self.target = gene
+
+    def advance(self, timepoint, states, tissue):
+        delay = self.delay
+
+        # calculate weighted sum of upstream
+        activator_sum = 0.0
+        for activator, weight in zip(self.activator_names, self.weights):
+            r = get_gene(activator)
+            activator_state = states.get_gene_state_info(
+                timepoint=timepoint, delay=delay, gene=r, tissue=tissue
+            )
+            # check active here and elsewhere? @CTB
+            if activator_state is not None:
+                activator_sum += weight * activator_state.level
+
+        activator_output = logistic_output(rate=self.rate,
+                                           midpoint=self.midpoint,
+                                           input_level=activator_sum)
+
+        # are we repressed?
+        active = check_ligand(dest=self.target,
+                              timepoint=timepoint, states=states,
+                              tissue=tissue, delay=delay)
+        return self.target, GeneStateInfo(activator_output, active)
+
+
 class LogisticRepressor:
     """Logistic function: activate if activator, unless repressor
     above threshold"""
@@ -532,8 +623,6 @@ class LogisticMultiRepressor:
             )
             if repressor_state is not None:
                 repressor_sum += weight * repressor_state.level
-            else:
-                repressor_input = 0
 
         repressor_output = logistic_output(rate=self.rate,
                                            midpoint=self.midpoint,

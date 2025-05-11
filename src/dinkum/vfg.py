@@ -153,6 +153,7 @@ class Interactions:
 
 
 class Interaction_IsPresent(Interactions):
+    # @CTB recode as custom2?
     multiple_allowed = True
 
     def __init__(
@@ -199,186 +200,6 @@ class Interaction_IsPresent(Interactions):
         # we have no opinion on activity outside our tissue!
 
         self.level = round(self.level / self.decay + 0.5)
-
-
-class Interaction_Activates(Interactions):
-    def __init__(self, *, source=None, dest=None, delay=1):
-        check_is_valid_gene(dest)
-        check_is_tf(source)
-
-        self.src = source
-        self.dest = dest
-        self.delay = delay
-
-    def btp_autonomous_links(self):
-        yield self.dest, self.src, "positive"
-
-    def btp_signal_links(self):
-        return []
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        The gene is active if its source was active 'delay' ticks ago.
-        """
-        if not states:
-            return
-
-        assert tissue
-        assert timepoint is not None
-
-        if states.is_active(timepoint, self.delay, self.src, tissue):
-            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
-            yield self.dest, GeneStateInfo(level=100, active=is_active)
-
-
-class Interaction_Or(Interactions):
-    def __init__(self, *, sources=None, dest=None, delay=1):
-        check_is_valid_gene(dest)
-        for g in sources:
-            check_is_tf(g)
-
-        for tf in sources:
-            if not tf.is_tf:
-                raise DinkumNotATranscriptionFactor(tf.name)
-        self.sources = sources
-        self.dest = dest
-        self.delay = delay
-
-    def btp_autonomous_links(self):
-        for src in self.sources:
-            return [self.dest, self.src, "positive"]
-
-    def btp_signal_links(self):
-        return []
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        The gene is active if any of its sources were activate 'delay'
-        ticks ago.
-        """
-        if not states:
-            return
-
-        assert tissue
-
-        source_active = [
-            states.is_active(timepoint, self.delay, g, tissue) for g in self.sources
-        ]
-
-        if any(source_active):
-            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
-            yield self.dest, GeneStateInfo(level=100, active=is_active)
-
-
-class Interaction_AndNot(Interactions):
-    def __init__(self, *, source=None, repressor=None, dest=None, delay=1):
-        check_is_valid_gene(dest)
-        check_is_tf(source)
-        check_is_tf(repressor)
-
-        self.src = source
-        self.repressor = repressor
-        self.dest = dest
-        self.delay = delay
-
-    def btp_autonomous_links(self):
-        yield [self.dest, self.src, "positive"]
-        yield [self.dest, self.repressor, "negative"]
-
-    def btp_signal_links(self):
-        return []
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        The gene is active if its activator was active 'delay' ticks ago,
-        and its repressor was _not_ active then.
-        """
-        if not states:
-            return
-
-        assert tissue
-
-        src_is_active = states.is_active(timepoint, self.delay, self.src, tissue)
-        repressor_is_active = states.is_active(
-            timepoint, self.delay, self.repressor, tissue
-        )
-
-        if src_is_active and not repressor_is_active:
-            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
-            yield self.dest, GeneStateInfo(level=100, active=is_active)
-
-
-class Interaction_And(Interactions):
-    def __init__(self, *, sources=None, dest=None, delay=1):
-        check_is_valid_gene(dest)
-        for g in sources:
-            check_is_tf(g)
-
-        self.sources = sources
-        self.dest = dest
-        self.delay = delay
-
-    def btp_autonomous_links(self):
-        for src in self.sources:
-            yield [self.dest, src, "positive"]
-
-    def btp_signal_links(self):
-        return []
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        The gene is active if all of its sources were active 'delay' ticks
-        ago.
-        """
-        if not states:
-            return
-
-        assert tissue
-
-        source_active = [
-            states.is_active(timepoint, self.delay, g, tissue) for g in self.sources
-        ]
-
-        if all(source_active):
-            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
-            yield self.dest, GeneStateInfo(level=100, active=is_active)
-
-
-class Interaction_ToggleRepressed(Interactions):
-    def __init__(self, *, tf=None, cofactor=None, dest=None, delay=1):
-        check_is_valid_gene(dest)
-        check_is_tf(tf)
-        check_is_valid_gene(cofactor)
-
-        self.tf = tf
-        self.cofactor = cofactor
-        self.dest = dest
-        self.delay = delay
-
-    def btp_signal_links(self):
-        return []
-
-    def btp_autonomous_links(self):
-        yield [self.dest, self.tf, "positive"]
-        yield [self.dest, self.cofactor, "positive"]  # @CTB toggle
-
-    def advance(self, *, timepoint=None, states=None, tissue=None):
-        """
-        The gene is active if the tf was active and the cofactor was active
-        'delay' ticks ago.
-        """
-        if not states:
-            return
-
-        assert tissue
-
-        tf_active = states.is_active(timepoint, self.delay, self.tf, tissue)
-        cofactor_active = states.is_active(timepoint, self.delay, self.cofactor, tissue)
-
-        # @CTB refigure for receptor/ligand, yah?
-        if tf_active and not cofactor_active:
-            is_active = self.check_ligand(timepoint, states, tissue, self.delay)
-            yield self.dest, GeneStateInfo(level=100, active=is_active)
 
 
 class Interaction_Custom(Interactions):
@@ -553,20 +374,22 @@ class Gene:
         check_is_tf(source)
         self.custom2(Activator(rate=100, activator_name=source.name,
                                delay=delay))
-        #ix = Interaction_Activates(source=source, dest=self, delay=delay)
-        #_add_rule(ix)
 
     def activated_by_or(self, *, sources=None, delay=1):
-        ix = Interaction_Or(sources=sources, dest=self, delay=delay)
-        _add_rule(ix)
+        from .vfg2 import LogisticMultiActivator
+        for src in sources:
+            check_is_tf(src)
+        check_is_valid_gene(self)
+        names = [ src.name for src in sources ]
+        weights = [ 1 ]*len(names) # OR
+        self.custom2(LogisticMultiActivator(activator_names=names,
+                                            weights=weights,
+                                            delay=delay,
+                                            rate=100))
 
     activated_or = activated_by_or
 
     def and_not(self, *, activator=None, repressor=None, delay=1):
-        #ix = Interaction_AndNot(
-        #    source=activator, repressor=repressor, dest=self, delay=delay
-        #)
-        #_add_rule(ix)
         from .vfg2 import Repressor
         check_is_valid_gene(self)
         check_is_tf(activator)
@@ -576,15 +399,17 @@ class Gene:
                                delay=delay, repressor_rate=100, activator_rate=100))
 
     def activated_by_and(self, *, sources, delay=1):
-        ix = Interaction_And(sources=sources, dest=self, delay=delay)
-        _add_rule(ix)
-
-    def toggle_repressed(self, *, tf=None, cofactor=None, delay=1):
-        # @CTB deprecate/remove?
-        ix = Interaction_ToggleRepressed(
-            tf=tf, cofactor=cofactor, dest=self, delay=delay
-        )
-        _add_rule(ix)
+        from .vfg2 import LogisticMultiActivator
+        for src in sources:
+            check_is_tf(src)
+        check_is_valid_gene(self)
+        names = [ src.name for src in sources ]
+        weights = [ 1/len(names) ]*len(names) # AND
+        self.custom2(LogisticMultiActivator(activator_names=names,
+                                            weights=weights,
+                                            delay=delay,
+                                            rate=100,
+                                            midpoint=99))
 
     def is_present(self, *, where=None, start=None, duration=None, level=100, decay=1):
         assert where
