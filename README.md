@@ -23,6 +23,7 @@ To get started with dinkum, see [notebooks/0-getting-started.ipynb](notebooks/0-
 * [5-intermediate-custom-logic.ipynb](notebooks/5-intermediate-custom-logic.ipynb)
 * [6-decay-example.ipynb](notebooks/6-decay-example.ipynb)
 * [6-multi-level-activation.ipynb](notebooks/6-multi-level-activation.ipynb)
+* [7-fit-functions.ipynb](notebooks/7-fit-functions.ipynb)
 * [9-advanced-examples.ipynb](notebooks/9-advanced-examples.ipynb)
 
 ## Why 'dinkum'?
