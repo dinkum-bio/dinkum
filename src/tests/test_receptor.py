@@ -258,7 +258,7 @@ def test_signaling_ligand_is_not_direct_custom():
     def activator_fn(*, X):
         return X
 
-    a.custom_activation(state_fn=activator_fn, delay=1)
+    a.custom_fn(state_fn=activator_fn, delay=1)
     with pytest.raises(DinkumNotATranscriptionFactor):
         dinkum.run(1, 12)
 

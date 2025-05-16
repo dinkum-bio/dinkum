@@ -28,7 +28,7 @@ def test_basic_gene_timecourse():
     z = Gene(name="Z")
     m = Tissue(name="M")
 
-    z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
+    z.custom_obj(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
 
     observations.check_level_is_between(
         gene="Z", time=2, tissue="M", min_level=33, max_level=33
@@ -58,7 +58,7 @@ def test_basic_decay():
     x = Gene(name="X")
     m = Tissue(name="M")
 
-    x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
+    x.custom_obj(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
 
     observations.check_level_is_between(
         gene="X", time=1, tissue="M", min_level=100, max_level=100
@@ -94,7 +94,7 @@ def test_basic_growth():
     y = Gene(name="Y")
     m = Tissue(name="M")
 
-    y.custom2(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
+    y.custom_obj(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
 
     observations.check_level_is_between(
         gene="Y", time=1, tissue="M", min_level=0, max_level=0
@@ -122,9 +122,9 @@ def test_basic_linear_combination():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
+    z.custom_obj(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
     linear_combination = LinearCombination(weights=[1], gene_names=["Z"])
-    out.custom2(linear_combination)
+    out.custom_obj(linear_combination)
 
     observations.check_level_is_between(
         gene="Z", time=2, tissue="M", min_level=33, max_level=33
@@ -157,11 +157,11 @@ def test_basic_linear_combination_no_such_gene():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
+    z.custom_obj(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
     linear_combination = LinearCombination(
         weights=[1, 0.33, 0.33], gene_names=["X", "Y", "Z"]
     )
-    out.custom2(linear_combination)
+    out.custom_obj(linear_combination)
 
     with pytest.raises(DinkumInvalidGene):
         dinkum.run(1, 5, verbose=True)
@@ -182,7 +182,7 @@ def test_logistic_activator():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(LogisticActivator(rate=100, midpoint=50, activator_name="Z"))
+    out.custom_obj(LogisticActivator(rate=100, midpoint=50, activator_name="Z"))
 
     xvals, yvals = calc_response_1d(
         timepoint=2, target_gene_name="out", variable_gene_name="Z"
@@ -214,7 +214,7 @@ def test_logistic_repressor():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(
+    out.custom_obj(
         LogisticRepressor(rate=100, midpoint=50, activator_name="X", repressor_name="Z")
     )
 
@@ -244,7 +244,7 @@ def test_logistic_repressor_2d():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(
+    out.custom_obj(
         LogisticRepressor(rate=100, midpoint=50, activator_name="X", repressor_name="Z")
     )
 
@@ -273,7 +273,7 @@ def test_logistic_repressor2():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(
+    out.custom_obj(
         LogisticRepressor2(
             activator_rate=100,
             activator_name="X",
@@ -301,7 +301,7 @@ def test_logistic_repressor2_2d():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(
+    out.custom_obj(
         LogisticRepressor2(
             activator_rate=100,
             activator_name="X",
@@ -329,7 +329,7 @@ def test_logistic_repressor_multi():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    out.custom2(
+    out.custom_obj(
         LogisticMultiRepressor(
             rate=100, midpoint=50, activator_name="X", repressor_names=["Z"]
         )
@@ -362,12 +362,12 @@ def test_fit():
     o = Gene(name="out")
     m = Tissue(name="M")
 
-    x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
-    y.custom2(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
-    z.custom2(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
+    x.custom_obj(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
+    y.custom_obj(Growth(start_time=1, rate=0.5, initial_level=0, tissue=m))
+    z.custom_obj(GeneTimecourse(start_time=2, tissue=m, values=[100, 200, 300]))
 
     linear_combination = LinearCombination(gene_names=["X", "Y", "Z"])
-    o.custom2(linear_combination)
+    o.custom_obj(linear_combination)
 
     fit_values = [0, 100, 83, 69, 57]
 
@@ -390,8 +390,8 @@ def test_fit_2_logistic_activator():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticActivator(rate=92, midpoint=58, activator_name="X"))
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom_obj(LogisticActivator(rate=92, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
@@ -408,10 +408,10 @@ def test_fit_2_logistic_activator():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
     logit = LogisticActivator(activator_name="X")
-    out.custom2(logit)
+    out.custom_obj(logit)
 
     # fit!!
     res = run_lmfit(
@@ -437,8 +437,8 @@ def test_fit_2_growth():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom_obj(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
@@ -457,10 +457,10 @@ def test_fit_2_growth():
 
     # use incorrect params for Growth
     growth = Growth(start_time=1, rate=1, initial_level=50, tissue=m)
-    x.custom2(growth)
+    x.custom_obj(growth)
 
     logit = LogisticActivator(rate=11, midpoint=58, activator_name="X")
-    out.custom2(logit)
+    out.custom_obj(logit)
 
     # fit!!
     res = run_lmfit(
@@ -484,8 +484,8 @@ def test_fit_2_decay():
     out = Gene(name="out")
     m = Tissue(name="M")
 
-    x.custom2(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
-    out.custom2(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
+    x.custom_obj(Decay(start_time=1, rate=1.2, initial_level=100, tissue=m))
+    out.custom_obj(LogisticActivator(rate=11, midpoint=58, activator_name="X"))
 
     tc = dinkum.run(start=1, stop=20, verbose=True)
     states = tc.get_states()
@@ -504,10 +504,10 @@ def test_fit_2_decay():
 
     # use incorrect params for Growth
     growth = Decay(start_time=1, rate=1, initial_level=50, tissue=m)
-    x.custom2(growth)
+    x.custom_obj(growth)
 
     logit = LogisticActivator(rate=11, midpoint=58, activator_name="X")
-    out.custom2(logit)
+    out.custom_obj(logit)
 
     # fit!!
     res = run_lmfit(
@@ -533,8 +533,8 @@ def test_fit_2_logistic_repressor():
     m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom_obj(
         LogisticRepressor(
             rate=92, midpoint=58, activator_name="ubiq", repressor_name="X"
         )
@@ -557,10 +557,10 @@ def test_fit_2_logistic_repressor():
     m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
     logit = LogisticRepressor(activator_name="ubiq", repressor_name="X")
-    out.custom2(logit)
+    out.custom_obj(logit)
 
     # fit!!
     res = run_lmfit(
@@ -588,8 +588,8 @@ def test_fit_2_logistic_multi_repressor():
     m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
-    out.custom2(
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    out.custom_obj(
         LogisticMultiRepressor(
             rate=92, midpoint=58, activator_name="ubiq", repressor_names=["X"]
         )
@@ -612,10 +612,10 @@ def test_fit_2_logistic_multi_repressor():
     m = Tissue(name="M")
 
     ubiq.is_present(where=m, start=1)
-    x.custom2(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
+    x.custom_obj(Growth(start_time=1, rate=0.1, initial_level=0, tissue=m))
 
     logit = LogisticMultiRepressor(activator_name="ubiq", repressor_names=["X"])
-    out.custom2(logit)
+    out.custom_obj(logit)
 
     # fit!!
     res = run_lmfit(

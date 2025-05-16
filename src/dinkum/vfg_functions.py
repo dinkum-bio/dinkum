@@ -705,8 +705,8 @@ class LogisticMultiRepressor:
 def get_ix2_for_gene_name(gene_name):
     for ix in vfg._rules:
         if ix.dest.name == gene_name:
-            if not isinstance(ix, vfg.Interaction_Custom2):
-                raise Exception(f"ix {ix} must be a Custom2 ix")
+            if not isinstance(ix, vfg.Interaction_CustomObj):
+                raise Exception(f"ix {ix} must be a CustomObj ix")
             yield ix
 
 
@@ -735,8 +735,8 @@ def run_lmfit(start, stop, *, fit_values, fit_genes, debug=False, method="leasts
         "Set fit parameters on all the genes."
         for ix in vfg._rules:
             if ix.dest in fit_genes:
-                if not isinstance(ix, vfg.Interaction_Custom2):
-                    raise Exception(f"ix {ix} must be a Custom2 ix")
+                if not isinstance(ix, vfg.Interaction_CustomObj):
+                    raise Exception(f"ix {ix} must be a CustomObj ix")
                 obj = ix.obj
                 obj.set_params(p)
 

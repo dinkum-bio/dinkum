@@ -301,7 +301,7 @@ class Interaction_Custom(Interactions):
             yield self.dest, GeneStateInfo(level, is_active)
 
 
-class Interaction_Custom2(Interactions):
+class Interaction_CustomObj(Interactions):
     """
     An interaction that supports even more powerful arbitrary logic & levels.
     """
@@ -372,7 +372,7 @@ class Gene:
     def activated_by(self, *, source=None, delay=1):
         check_is_valid_gene(self)
         check_is_tf(source)
-        self.custom2(Activator(rate=100, activator_name=source.name, delay=delay))
+        self.custom_obj(Activator(rate=100, activator_name=source.name, delay=delay))
 
     def activated_by_or(self, *, sources=None, delay=1):
         for src in sources:
@@ -380,7 +380,7 @@ class Gene:
         check_is_valid_gene(self)
         names = [src.name for src in sources]
         weights = [1] * len(names)  # OR
-        self.custom2(
+        self.custom_obj(
             LogisticMultiActivator(
                 activator_names=names, weights=weights, delay=delay, rate=100
             )
@@ -392,7 +392,7 @@ class Gene:
         check_is_valid_gene(self)
         check_is_tf(activator)
         check_is_tf(repressor)
-        self.custom2(
+        self.custom_obj(
             Repressor(
                 activator_name=activator.name,
                 repressor_name=repressor.name,
@@ -408,7 +408,7 @@ class Gene:
         check_is_valid_gene(self)
         names = [src.name for src in sources]
         weights = [1 / len(names)] * len(names)  # AND
-        self.custom2(
+        self.custom_obj(
             LogisticMultiActivator(
                 activator_names=names,
                 weights=weights,
@@ -433,13 +433,13 @@ class Gene:
         )
         _add_rule(ix)
 
-    def custom_activation(self, *, state_fn=None, delay=1):
+    def custom_fn(self, *, state_fn=None, delay=1):
         ix = Interaction_Custom(dest=self, state_fn=state_fn, delay=delay)
         _add_rule(ix)
 
-    def custom2(self, obj):
+    def custom_obj(self, obj):
         obj.set_gene(self)
-        ix = Interaction_Custom2(dest=self, obj=obj)
+        ix = Interaction_CustomObj(dest=self, obj=obj)
         _add_rule(ix)
 
 
