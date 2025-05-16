@@ -1,6 +1,6 @@
 [project]
 name = "dinkum-bio"
-version = "0.6.0-dev"
+version = "0.6.0"
 description = "directed interaction network kit for modeling, focused on GRNs"
 readme = "README.md"
 requires-python = ">=3.11"
