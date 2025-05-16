@@ -297,7 +297,7 @@ class LogisticMultiActivator:
     """Logistic function: combine multiple (weighted) inputs, activate
     if logistic function is above threshold.
 
-    Can be used for AND and OR both
+    Can be used for both AND and OR, with different weights.
     """
 
     def __init__(
@@ -369,8 +369,8 @@ class LogisticMultiActivator:
             activator_state = states.get_gene_state_info(
                 timepoint=timepoint, delay=delay, gene=r, tissue=tissue
             )
-            # check active here and elsewhere? @CTB
-            if activator_state is not None:
+            # check active here and elsewhere? @CTB YES FIX/TEST ELSEWHERE :)
+            if activator_state is not None and activator_state.active:
                 activator_sum += weight * activator_state.level
 
         activator_output = logistic_output(
