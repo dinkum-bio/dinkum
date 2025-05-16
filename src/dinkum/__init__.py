@@ -121,7 +121,7 @@ class OnlyGeneStates:
 
     def is_active(self, gene_name):
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
-        return state_info.active
+        return state_info.level > 0 and state_info.active
 
     def get_level(self, gene_name):
         state_info = self.genes_by_name.get(gene_name, DEFAULT_OFF)
@@ -372,7 +372,7 @@ class Timecourse:
 
                 next_state[tissue] = next_active
                 if verbose:
-                    print(tp, next_active)
+                    print(tp, tissue.name, next_active)
 
             # advance => next state
             self.states_d[tp] = next_state
