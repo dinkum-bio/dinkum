@@ -14,9 +14,9 @@ def test_custom_fn_1():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     def activator_fn(*, X):
         if X.level == 0 or not X.active:
@@ -24,16 +24,16 @@ def test_custom_fn_1():
         return X
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=activator_fn, delay=1)
+    y.custom_fn(state_fn=activator_fn, delay=1)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_not_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_present(gene="Y", time=2, tissue="M")
 
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
-    observations.check_is_not_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
+    observations.check_is_not_present(gene="Y", time=3, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -44,9 +44,9 @@ def test_custom_fn_1_delay_2():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     def activator_fn(*, X):
         if X.level == 0 or not X.active:
@@ -54,18 +54,18 @@ def test_custom_fn_1_delay_2():
         return X
 
     x.is_present(where=m, start=1, duration=2)
-    y.custom_activation(state_fn=activator_fn, delay=2)
+    y.custom_fn(state_fn=activator_fn, delay=2)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
 
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_not_present(gene='Y', time=2, tissue='M')
-    observations.check_is_present(gene='Y', time=3, tissue='M')
-    observations.check_is_present(gene='Y', time=4, tissue='M')
-    observations.check_is_not_present(gene='Y', time=5, tissue='M')
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_not_present(gene="Y", time=2, tissue="M")
+    observations.check_is_present(gene="Y", time=3, tissue="M")
+    observations.check_is_present(gene="Y", time=4, tissue="M")
+    observations.check_is_not_present(gene="Y", time=5, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -78,26 +78,26 @@ def test_custom_fn_2():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    z = Gene(name='Z')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    z = Gene(name="Z")
+    m = Tissue(name="M")
 
-    def activator_fn(*, Z, X):     # allow order independence
+    def activator_fn(*, Z, X):  # allow order independence
         return X
 
     x.is_present(where=m, start=1, duration=1)
     z.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=activator_fn, delay=1)
+    y.custom_fn(state_fn=activator_fn, delay=1)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_not_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_present(gene="Y", time=2, tissue="M")
 
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
-    observations.check_is_not_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
+    observations.check_is_not_present(gene="Y", time=3, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -108,15 +108,15 @@ def test_custom_1_fail():
     # no gene Z
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     def activator_fn(*, Z):
         return X
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=activator_fn, delay=1)
+    y.custom_fn(state_fn=activator_fn, delay=1)
 
     # run time course
     with pytest.raises(DinkumInvalidGene):
@@ -127,39 +127,44 @@ def test_custom_bad_defn():
     # invalid activation function defns - must be kwargs
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     # must be explicitly named, not positional
     def activator_fn(Z):
         return X
+
     with pytest.raises(DinkumInvalidActivationFunction):
-        y.custom_activation(state_fn=activator_fn, delay=1)
+        y.custom_fn(state_fn=activator_fn, delay=1)
 
     # no defaults
     def activator_fn(Z=None):
         return X
+
     with pytest.raises(DinkumInvalidActivationFunction):
-        y.custom_activation(state_fn=activator_fn, delay=1)
+        y.custom_fn(state_fn=activator_fn, delay=1)
 
     # no defaults 2
     def activator_fn(*, Z=None):
         return X
+
     with pytest.raises(DinkumInvalidActivationFunction):
-        y.custom_activation(state_fn=activator_fn, delay=1)
+        y.custom_fn(state_fn=activator_fn, delay=1)
 
     # no general kwargs
     def activator_fn(**kwargs):
         return X
+
     with pytest.raises(DinkumInvalidActivationFunction):
-        y.custom_activation(state_fn=activator_fn, delay=1)
+        y.custom_fn(state_fn=activator_fn, delay=1)
 
     # no general args
     def activator_fn(*args):
         return X
+
     with pytest.raises(DinkumInvalidActivationFunction):
-        y.custom_activation(state_fn=activator_fn, delay=1)
+        y.custom_fn(state_fn=activator_fn, delay=1)
 
 
 def test_custom_fail_bad_return():
@@ -168,15 +173,15 @@ def test_custom_fail_bad_return():
 
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
-    def activator_fn(*, X):     # allow order independence
+    def activator_fn(*, X):  # allow order independence
         return 100, False, "something else"
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=activator_fn, delay=1)
+    y.custom_fn(state_fn=activator_fn, delay=1)
 
     # run time course; expect error
     with pytest.raises(DinkumInvalidActivationResult):
@@ -190,27 +195,27 @@ def test_custom_class_1():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     class ActivateMe(CustomActivation):
         def __call__(self, *, X):
             return X
 
-    state_fn = ActivateMe(input_genes=['X'])
+    state_fn = ActivateMe(input_genes=["X"])
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=state_fn, delay=1)
+    y.custom_fn(state_fn=state_fn, delay=1)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_not_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_present(gene="Y", time=2, tissue="M")
 
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
-    observations.check_is_not_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
+    observations.check_is_not_present(gene="Y", time=3, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -224,16 +229,16 @@ def test_custom_class_1_bad_args():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     class ActivateMe(CustomActivation):
         def __call__(self, foo, *, X):
             return X
 
     with pytest.raises(DinkumInvalidActivationFunction):
-        state_fn = ActivateMe(input_genes=['X'])
+        state_fn = ActivateMe(input_genes=["X"])
 
 
 def test_custom_class_2():
@@ -243,9 +248,9 @@ def test_custom_class_2():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     class ActivateMe(CustomActivation):
         def __call__(self, *, X):
@@ -254,16 +259,16 @@ def test_custom_class_2():
     state_fn = ActivateMe(input_genes=[x])
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=state_fn, delay=1)
+    y.custom_fn(state_fn=state_fn, delay=1)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_not_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_present(gene="Y", time=2, tissue="M")
 
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
-    observations.check_is_not_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
+    observations.check_is_not_present(gene="Y", time=3, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -277,9 +282,9 @@ def test_custom_class_3():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     class ActivateMe(CustomActivation):
         def __call__(self, *, X):
@@ -288,16 +293,16 @@ def test_custom_class_3():
     state_fn = ActivateMe()
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=state_fn, delay=1)
+    y.custom_fn(state_fn=state_fn, delay=1)
 
     # set observations
-    observations.check_is_present(gene='X', time=1, tissue='M')
-    observations.check_is_not_present(gene='X', time=2, tissue='M')
-    observations.check_is_not_present(gene='Y', time=1, tissue='M')
-    observations.check_is_present(gene='Y', time=2, tissue='M')
+    observations.check_is_present(gene="X", time=1, tissue="M")
+    observations.check_is_not_present(gene="X", time=2, tissue="M")
+    observations.check_is_not_present(gene="Y", time=1, tissue="M")
+    observations.check_is_present(gene="Y", time=2, tissue="M")
 
-    observations.check_is_not_present(gene='X', time=3, tissue='M')
-    observations.check_is_not_present(gene='Y', time=3, tissue='M')
+    observations.check_is_not_present(gene="X", time=3, tissue="M")
+    observations.check_is_not_present(gene="Y", time=3, tissue="M")
 
     # run time course
     tc = dinkum.run(1, 5)
@@ -311,9 +316,9 @@ def test_custom_class_1_fail():
     # basic does-it-work
     dinkum.reset()
 
-    x = Gene(name='X')
-    y = Gene(name='Y')
-    m = Tissue(name='M')
+    x = Gene(name="X")
+    y = Gene(name="Y")
+    m = Tissue(name="M")
 
     class ActivateMe(CustomActivation):
         def __call__(self, *, Z):
@@ -322,7 +327,7 @@ def test_custom_class_1_fail():
     state_fn = ActivateMe()
 
     x.is_present(where=m, start=1, duration=1)
-    y.custom_activation(state_fn=state_fn, delay=1)
+    y.custom_fn(state_fn=state_fn, delay=1)
 
     # run time course
     with pytest.raises(DinkumInvalidGene):

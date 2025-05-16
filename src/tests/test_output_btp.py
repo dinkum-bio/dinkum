@@ -11,24 +11,24 @@ def define_model():
     # gataE, gcm, foxA
 
     # set it all up!
-    pmar1 = Gene(name='pmar1')
-    hesC = Gene(name='hesC')
-    alx1 = Gene(name='alx1')
-    delta = Ligand(name='delta')
-    notch = Receptor(name='su(h)', ligand=delta)
-    tbr = Gene(name='tbr')
-    ets1 = Gene(name='ets1')
-    gataE = Gene(name='gataE')
-    gcm = Gene(name='gcm')
-    foxA = Gene(name='foxA')
+    pmar1 = Gene(name="pmar1")
+    hesC = Gene(name="hesC")
+    alx1 = Gene(name="alx1")
+    delta = Ligand(name="delta")
+    notch = Receptor(name="su(h)", ligand=delta)
+    tbr = Gene(name="tbr")
+    ets1 = Gene(name="ets1")
+    gataE = Gene(name="gataE")
+    gcm = Gene(name="gcm")
+    foxA = Gene(name="foxA")
 
-    embryo = Tissue(name='rest of embryo')
-    micromere = Tissue(name='micromeres')
+    embryo = Tissue(name="rest of embryo")
+    micromere = Tissue(name="micromeres")
     embryo.add_neighbor(neighbor=micromere)
 
     # maternal genes
-    early_ubiq = Gene(name='ub1')
-    late_ubiq = Gene(name='ub2')
+    early_ubiq = Gene(name="ub1")
+    late_ubiq = Gene(name="ub2")
 
     ## set up maternal gene expression
 
@@ -69,7 +69,7 @@ def define_model():
 
 
 def test_output_double_neg():
-    filename = '/tmp/out.btp.csv'
+    filename = "/tmp/out.btp.csv"
     define_model()
-    print(f'writing to {filename}')
-    dinkum.utils.output_biotapestry_csv('/tmp/out.btp.csv')
+    print(f"writing to {filename}")
+    dinkum.utils.output_biotapestry_csv("/tmp/out.btp.csv")

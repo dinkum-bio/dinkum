@@ -1,4 +1,5 @@
 <BioTapestry version="7.1" >
+  <timeAxisDefinition units="hours" />
   <workspace x="0" y="0" w="12000" h="9000" />
   <startupView/>
   <fonts>
@@ -98,8 +99,7 @@
     <links>
       <link label="" src="0" targ="7" sign="+" id="10" targPad="4" />
       <link label="" src="0" targ="8" sign="+" id="11" targPad="4" />
-      <link label="" src="0" targ="9" sign="-" id="12" targPad="2" />
-      <link label="" src="1" targ="8" sign="+" id="13" targPad="5" />
+      <link label="" src="0" targ="8" sign="-" id="15" targPad="5" />
       <link label="" src="1" targ="9" sign="+" id="14" targPad="4" />
       <link label="" src="4" targ="0" sign="+" id="5" targPad="2" launchPad="1" />
       <link label="" src="4" targ="1" sign="+" id="6" targPad="3" launchPad="1" />
@@ -130,13 +130,13 @@
               <linkSegment id="0" strtX="5770.0" strtY="4410.0" />
               <linkSegment id="1" parent="0" strtX="5770.0" strtY="4410.0" endX="5770.0" endY="4500.0" />
               <linkSegment id="2" parent="1" strtX="5770.0" strtY="4500.0" endX="5580.0" endY="4500.0" />
-              <linkSegment id="3" parent="1" strtX="5770.0" strtY="4500.0" endX="5950.0" endY="4500.0" />
+              <linkSegment id="3" parent="1" strtX="5770.0" strtY="4500.0" endX="5780.0" endY="4500.0" />
             </segments>
             <drops>
               <drop ref="*" connectStart="0" />
               <drop ref="10" connectEnd="2" />
               <drop ref="11" connectEnd="1" />
-              <drop ref="12" connectEnd="3" />
+              <drop ref="15" connectEnd="3" />
             </drops>
           </linkBus>
           <linkBus labelX="5970.0" labelY="4480.0" src="1" >
@@ -144,11 +144,9 @@
             <segments>
               <linkSegment id="0" strtX="5970.0" strtY="4410.0" />
               <linkSegment id="1" parent="0" strtX="5970.0" strtY="4410.0" endX="5970.0" endY="4480.0" />
-              <linkSegment id="2" parent="1" strtX="5970.0" strtY="4480.0" endX="5780.0" endY="4480.0" />
             </segments>
             <drops>
               <drop ref="*" connectStart="0" />
-              <drop ref="13" connectEnd="2" />
               <drop ref="14" connectEnd="1" />
             </drops>
           </linkBus>

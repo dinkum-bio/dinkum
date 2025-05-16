@@ -1,6 +1,6 @@
 [project]
 name = "dinkum-bio"
-version = "0.5.1"
+version = "0.6.0"
 description = "directed interaction network kit for modeling, focused on GRNs"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -9,7 +9,7 @@ classifiers = [
 "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
     ]
 dependencies = ["ipycanvas==0.13.1", "Pillow==10.1.0", "pandas>=2,<3",
-    "nbval==0.11.0", "matplotlib"]
+    "nbval==0.11.0", "matplotlib", "lmfit"]
 
 authors = [
   { name="C. Titus Brown" },
