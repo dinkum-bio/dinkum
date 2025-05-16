@@ -5,7 +5,7 @@ import dinkum
 from dinkum.exceptions import DinkumInvalidGene
 from dinkum.vfg import Gene, GeneStateInfo
 from dinkum.vfn import Tissue
-from dinkum.vfg2 import (
+from dinkum.vfg_functions import (
     Growth,
     Decay,
     LinearCombination,
@@ -16,7 +16,7 @@ from dinkum.vfg2 import (
     calc_response_1d,
     calc_response_2d,
     LogisticMultiRepressor,
-    LogisticRepressor2
+    LogisticRepressor2,
 )
 
 from dinkum import observations
@@ -83,7 +83,7 @@ def test_growth_defaults():
     dinkum.reset()
 
     m = Tissue(name="M")
-    fn = Growth(rate=.25, tissue=m)
+    fn = Growth(rate=0.25, tissue=m)
     assert fn.initial_level == 0
     assert fn.start_time == 1
 
@@ -274,10 +274,12 @@ def test_logistic_repressor2():
     m = Tissue(name="M")
 
     out.custom2(
-        LogisticRepressor2(activator_rate=100,
-                          activator_name="X",
-                          repressor_rate=100,
-                          repressor_name="Z")
+        LogisticRepressor2(
+            activator_rate=100,
+            activator_name="X",
+            repressor_rate=100,
+            repressor_name="Z",
+        )
     )
 
     xvals, yvals = calc_response_1d(
@@ -300,10 +302,12 @@ def test_logistic_repressor2_2d():
     m = Tissue(name="M")
 
     out.custom2(
-        LogisticRepressor2(activator_rate=100,
-                          activator_name="X",
-                          repressor_rate=100,
-                          repressor_name="Z")
+        LogisticRepressor2(
+            activator_rate=100,
+            activator_name="X",
+            repressor_rate=100,
+            repressor_name="Z",
+        )
     )
 
     arr = calc_response_2d(
@@ -410,7 +414,9 @@ def test_fit_2_logistic_activator():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute")
+    res = run_lmfit(
+        1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute"
+    )
 
     # extract parameters -
     print(res.params)
@@ -457,7 +463,9 @@ def test_fit_2_growth():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute")
+    res = run_lmfit(
+        1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute"
+    )
 
     # extract parameters -
     print(res.params)
@@ -502,7 +510,9 @@ def test_fit_2_decay():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute")
+    res = run_lmfit(
+        1, 20, fit_values=fit_to_vals, fit_genes=[x], debug=True, method="brute"
+    )
 
     # extract parameters -
     print(res.params)
@@ -553,7 +563,9 @@ def test_fit_2_logistic_repressor():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute")
+    res = run_lmfit(
+        1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=True, method="brute"
+    )
 
     # extract parameters -
     print(res.params)
@@ -606,7 +618,9 @@ def test_fit_2_logistic_multi_repressor():
     out.custom2(logit)
 
     # fit!!
-    res = run_lmfit(1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=False, method="brute")
+    res = run_lmfit(
+        1, 20, fit_values=fit_to_vals, fit_genes=[out], debug=False, method="brute"
+    )
 
     # extract parameters -
     print(res.params)

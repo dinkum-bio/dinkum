@@ -6,6 +6,7 @@ import collections
 
 from .exceptions import *
 from .vfn import check_is_valid_tissue
+from .vfg_functions import *
 
 
 class GeneStateInfo:
@@ -369,47 +370,53 @@ class Gene:
             return self.present()
 
     def activated_by(self, *, source=None, delay=1):
-        from .vfg2 import Activator
         check_is_valid_gene(self)
         check_is_tf(source)
-        self.custom2(Activator(rate=100, activator_name=source.name,
-                               delay=delay))
+        self.custom2(Activator(rate=100, activator_name=source.name, delay=delay))
 
     def activated_by_or(self, *, sources=None, delay=1):
-        from .vfg2 import LogisticMultiActivator
         for src in sources:
             check_is_tf(src)
         check_is_valid_gene(self)
-        names = [ src.name for src in sources ]
-        weights = [ 1 ]*len(names) # OR
-        self.custom2(LogisticMultiActivator(activator_names=names,
-                                            weights=weights,
-                                            delay=delay,
-                                            rate=100))
+        names = [src.name for src in sources]
+        weights = [1] * len(names)  # OR
+        self.custom2(
+            LogisticMultiActivator(
+                activator_names=names, weights=weights, delay=delay, rate=100
+            )
+        )
 
     activated_or = activated_by_or
 
     def and_not(self, *, activator=None, repressor=None, delay=1):
-        from .vfg2 import Repressor
         check_is_valid_gene(self)
         check_is_tf(activator)
         check_is_tf(repressor)
-        self.custom2(Repressor(activator_name=activator.name,
-                               repressor_name=repressor.name,
-                               delay=delay, repressor_rate=100, activator_rate=100))
+        self.custom2(
+            Repressor(
+                activator_name=activator.name,
+                repressor_name=repressor.name,
+                delay=delay,
+                repressor_rate=100,
+                activator_rate=100,
+            )
+        )
 
     def activated_by_and(self, *, sources, delay=1):
-        from .vfg2 import LogisticMultiActivator
         for src in sources:
             check_is_tf(src)
         check_is_valid_gene(self)
-        names = [ src.name for src in sources ]
-        weights = [ 1/len(names) ]*len(names) # AND
-        self.custom2(LogisticMultiActivator(activator_names=names,
-                                            weights=weights,
-                                            delay=delay,
-                                            rate=100,
-                                            midpoint=99))
+        names = [src.name for src in sources]
+        weights = [1 / len(names)] * len(names)  # AND
+        self.custom2(
+            LogisticMultiActivator(
+                activator_names=names,
+                weights=weights,
+                delay=delay,
+                rate=100,
+                midpoint=99,
+            )
+        )
 
     def is_present(self, *, where=None, start=None, duration=None, level=100, decay=1):
         assert where

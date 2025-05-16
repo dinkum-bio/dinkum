@@ -2,8 +2,11 @@ import numpy as np
 from lmfit import minimize, Parameters
 import math
 
-from dinkum import vfg, Timecourse, TissueGeneStates, get_tissue, get_gene
-from dinkum.vfg import GeneStateInfo, check_ligand
+import dinkum
+from dinkum import vfg, vfn
+
+# from dinkum import vfg, Timecourse, TissueGeneStates, get_tissue, get_gene
+# from dinkum.vfg import GeneStateInfo, check_ligand
 from itertools import chain
 
 # @CTB prevent set_gene from being called multiple times
@@ -21,14 +24,13 @@ def logistic_output(*, rate, input_level, midpoint):
 
 
 class Decay:
-    def __init__(self, *, start_time=1, rate, initial_level=100, tissue,
-                 delay=1):
+    def __init__(self, *, start_time=1, rate, initial_level=100, tissue, delay=1):
         self.start_time = start_time
         self.rate = rate
         self.initial_level = initial_level
         self.tissue = tissue
         self.level = None
-        self.delay = delay      # 'delay' is only for checking for ligands
+        self.delay = delay  # 'delay' is only for checking for ligands
 
     def get_params(self, params_obj):
         target_name = self.target.name
@@ -54,21 +56,24 @@ class Decay:
         if tissue != self.tissue or timepoint < self.start_time:
             return None
 
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=self.delay)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=self.delay,
+        )
         if timepoint == self.start_time:
             # start!!
             self.level = self.initial_level
-            return self.target, GeneStateInfo(self.level, active)
+            return self.target, vfg.GeneStateInfo(self.level, active)
         else:
             self.level /= self.rate
-            return self.target, GeneStateInfo(self.level, active)
+            return self.target, vfg.GeneStateInfo(self.level, active)
 
 
 class Growth:
-    def __init__(self, *, start_time=1, rate, initial_level=0, tissue,
-                 delay=1):
+    def __init__(self, *, start_time=1, rate, initial_level=0, tissue, delay=1):
         self.start_time = start_time
         self.rate = rate
         self.initial_level = initial_level
@@ -100,26 +105,29 @@ class Growth:
         if tissue != self.tissue or timepoint < self.start_time:
             return None
 
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=self.delay)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=self.delay,
+        )
         if timepoint == self.start_time:
             # start!!
             self.level = self.initial_level
-            return self.target, GeneStateInfo(self.level, active)
+            return self.target, vfg.GeneStateInfo(self.level, active)
         else:
             self.level += int(100 - self.level) * self.rate
             level = min(self.level, 100.0)
             level = max(level, 0)
-            return self.target, GeneStateInfo(int(level), active)
+            return self.target, vfg.GeneStateInfo(int(level), active)
 
 
 class GeneTimecourse:
-    def __init__(self, *, start_time, tissue, values, normalize=True,
-                 delay=1):
+    def __init__(self, *, start_time, tissue, values, normalize=True, delay=1):
         self.start_time = start_time
         self.tissue = tissue
-        self.delay = delay      # only for checking for ligands
+        self.delay = delay  # only for checking for ligands
 
         values = list(values)
         if normalize:
@@ -146,10 +154,14 @@ class GeneTimecourse:
             val = 0
             active = False
 
-        active = active and check_ligand(dest=self.target,
-                                         timepoint=timepoint, states=states,
-                                         tissue=tissue, delay=self.delay)
-        return self.target, GeneStateInfo(int(val), active)
+        active = active and vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=self.delay,
+        )
+        return self.target, vfg.GeneStateInfo(int(val), active)
 
 
 class LinearCombination:
@@ -195,7 +207,7 @@ class LinearCombination:
         delay = self.delay
         input_activity = []
         for name in self.gene_names:
-            gene = get_gene(name)
+            gene = vfg.get_gene(name)
             gsi = states.get_gene_state_info(
                 timepoint=timepoint, delay=delay, gene=gene, tissue=tissue
             )
@@ -208,10 +220,14 @@ class LinearCombination:
         for weight, activity in zip(self.weights, input_activity):
             output += weight * activity
 
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(output, active)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(output, active)
 
 
 class LogisticActivator:
@@ -249,7 +265,7 @@ class LogisticActivator:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        gene = get_gene(self.activator_name)
+        gene = vfg.get_gene(self.activator_name)
         gsi = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=gene, tissue=tissue
         )
@@ -260,14 +276,19 @@ class LogisticActivator:
             input_level = 0
 
         # calc logistic function, centered at midpoint, with k = log(rate/10)
-        level = logistic_output(rate=self.rate,
-                                input_level=input_level,
-                                midpoint=self.midpoint)
+        level = logistic_output(
+            rate=self.rate, input_level=input_level, midpoint=self.midpoint
+        )
 
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(level, active)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(level, active)
+
 
 Activator = LogisticActivator
 
@@ -344,7 +365,7 @@ class LogisticMultiActivator:
         # calculate weighted sum of upstream
         activator_sum = 0.0
         for activator, weight in zip(self.activator_names, self.weights):
-            r = get_gene(activator)
+            r = vfg.get_gene(activator)
             activator_state = states.get_gene_state_info(
                 timepoint=timepoint, delay=delay, gene=r, tissue=tissue
             )
@@ -352,15 +373,19 @@ class LogisticMultiActivator:
             if activator_state is not None:
                 activator_sum += weight * activator_state.level
 
-        activator_output = logistic_output(rate=self.rate,
-                                           midpoint=self.midpoint,
-                                           input_level=activator_sum)
+        activator_output = logistic_output(
+            rate=self.rate, midpoint=self.midpoint, input_level=activator_sum
+        )
 
         # are we repressed?
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(activator_output, active)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(activator_output, active)
 
 
 class LogisticRepressor:
@@ -402,7 +427,7 @@ class LogisticRepressor:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        activator = get_gene(self.activator)
+        activator = vfg.get_gene(self.activator)
         activator_state = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=activator, tissue=tissue
         )
@@ -413,12 +438,12 @@ class LogisticRepressor:
             or activator_state.level == 0
             or not activator_state.active
         ):
-            return self.target, GeneStateInfo(0, False)
+            return self.target, vfg.GeneStateInfo(0, False)
 
         # ok, activated - record level and now see if we are repressed...
         activator_level = activator_state.level
 
-        repressor = get_gene(self.repressor)
+        repressor = vfg.get_gene(self.repressor)
         repressor_state = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=repressor, tissue=tissue
         )
@@ -429,16 +454,20 @@ class LogisticRepressor:
             repressor_input = 0
 
         # calc logistic function, centered at midpoint, with k = log(rate/10)
-        repressor_output = logistic_output(rate=self.rate,
-                                           midpoint=self.midpoint,
-                                           input_level=repressor_input)
+        repressor_output = logistic_output(
+            rate=self.rate, midpoint=self.midpoint, input_level=repressor_input
+        )
 
         # are we repressed?
         level2 = max(activator_level - repressor_output, 0)
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(level2, active)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(level2, active)
 
 
 class LogisticRepressor2:
@@ -446,7 +475,15 @@ class LogisticRepressor2:
     above threshold. Both activation and repression are switch-like"""
 
     def __init__(
-            self, *, activator_rate=11, repressor_rate=11, activator_midpoint=25, activator_name, repressor_midpoint=75, repressor_name, delay=1
+        self,
+        *,
+        activator_rate=11,
+        repressor_rate=11,
+        activator_midpoint=25,
+        activator_name,
+        repressor_midpoint=75,
+        repressor_name,
+        delay=1,
     ):
         self.activator_rate = activator_rate
         self.repressor_rate = repressor_rate
@@ -460,16 +497,32 @@ class LogisticRepressor2:
         target_name = self.target.name
 
         param_name = f"{target_name}_activator_rate"
-        params_obj.add(param_name, value=float(self.activator_rate), min=11, max=100, brute_step=1)
+        params_obj.add(
+            param_name, value=float(self.activator_rate), min=11, max=100, brute_step=1
+        )
 
         param_name = f"{target_name}_activator_midpoint"
-        params_obj.add(param_name, value=float(self.activator_midpoint), min=0, max=100, brute_step=1)
+        params_obj.add(
+            param_name,
+            value=float(self.activator_midpoint),
+            min=0,
+            max=100,
+            brute_step=1,
+        )
 
         param_name = f"{target_name}_repressor_rate"
-        params_obj.add(param_name, value=float(self.repressor_rate), min=11, max=100, brute_step=1)
+        params_obj.add(
+            param_name, value=float(self.repressor_rate), min=11, max=100, brute_step=1
+        )
 
         param_name = f"{target_name}_repressor_midpoint"
-        params_obj.add(param_name, value=float(self.repressor_midpoint), min=0, max=100, brute_step=1)
+        params_obj.add(
+            param_name,
+            value=float(self.repressor_midpoint),
+            min=0,
+            max=100,
+            brute_step=1,
+        )
 
     def set_params(self, params_obj):
         target_name = self.target.name
@@ -492,7 +545,7 @@ class LogisticRepressor2:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        activator = get_gene(self.activator)
+        activator = vfg.get_gene(self.activator)
         activator_state = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=activator, tissue=tissue
         )
@@ -502,12 +555,14 @@ class LogisticRepressor2:
         if activator_state:
             activator_level = activator_state.level
 
-        activator_level = logistic_output(rate=self.activator_rate,
-                                          input_level=activator_level,
-                                          midpoint=self.activator_midpoint)
+        activator_level = logistic_output(
+            rate=self.activator_rate,
+            input_level=activator_level,
+            midpoint=self.activator_midpoint,
+        )
 
         # now get repressor level
-        repressor = get_gene(self.repressor)
+        repressor = vfg.get_gene(self.repressor)
         repressor_state = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=repressor, tissue=tissue
         )
@@ -516,16 +571,23 @@ class LogisticRepressor2:
         if repressor_state is not None:
             repressor_input = repressor_state.level
 
-        repressor_output = logistic_output(rate=self.repressor_rate,
-                                           midpoint=self.repressor_midpoint,
-                                           input_level=repressor_input)
+        repressor_output = logistic_output(
+            rate=self.repressor_rate,
+            midpoint=self.repressor_midpoint,
+            input_level=repressor_input,
+        )
 
         # are we repressed?
         level2 = max(activator_level - repressor_output, 0)
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(level2, active)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(level2, active)
+
 
 Repressor = LogisticRepressor2
 
@@ -599,7 +661,7 @@ class LogisticMultiRepressor:
     def advance(self, timepoint, states, tissue):
         delay = self.delay
 
-        activator = get_gene(self.activator)
+        activator = vfg.get_gene(self.activator)
         activator_state = states.get_gene_state_info(
             timepoint=timepoint, delay=delay, gene=activator, tissue=tissue
         )
@@ -610,30 +672,34 @@ class LogisticMultiRepressor:
             or activator_state.level == 0
             or not activator_state.active
         ):
-            return self.target, GeneStateInfo(0, False)
+            return self.target, vfg.GeneStateInfo(0, False)
 
         # ok, activated - record level and now see if we are repressed...
         activator_level = activator_state.level
 
         repressor_sum = 0.0
         for repressor, weight in zip(self.repressor_names, self.weights):
-            r = get_gene(repressor)
+            r = vfg.get_gene(repressor)
             repressor_state = states.get_gene_state_info(
                 timepoint=timepoint, delay=delay, gene=r, tissue=tissue
             )
             if repressor_state is not None:
                 repressor_sum += weight * repressor_state.level
 
-        repressor_output = logistic_output(rate=self.rate,
-                                           midpoint=self.midpoint,
-                                           input_level=repressor_sum)
+        repressor_output = logistic_output(
+            rate=self.rate, midpoint=self.midpoint, input_level=repressor_sum
+        )
 
         # are we repressed?
         level2 = max(activator_level - repressor_output, 0)
-        active = check_ligand(dest=self.target,
-                              timepoint=timepoint, states=states,
-                              tissue=tissue, delay=delay)
-        return self.target, GeneStateInfo(level2, True)
+        active = vfg.check_ligand(
+            dest=self.target,
+            timepoint=timepoint,
+            states=states,
+            tissue=tissue,
+            delay=delay,
+        )
+        return self.target, vfg.GeneStateInfo(level2, True)
 
 
 def get_ix2_for_gene_name(gene_name):
@@ -674,7 +740,7 @@ def run_lmfit(start, stop, *, fit_values, fit_genes, debug=False, method="leasts
                 obj = ix.obj
                 obj.set_params(p)
 
-    tc = Timecourse(start=start, stop=stop)
+    tc = dinkum.Timecourse(start=start, stop=stop)
 
     times = list(range(start, stop + 1))
 
@@ -717,7 +783,7 @@ def run_lmfit(start, stop, *, fit_values, fit_genes, debug=False, method="leasts
     return res
 
 
-def run_lmfit2(start, stop, *, debug=False, method='leastsq', **kwargs):
+def run_lmfit2(start, stop, *, debug=False, method="leastsq", **kwargs):
     fit_genes = {}
     for gene_name in vfg.get_gene_names():
         val = kwargs.get(gene_name)
@@ -727,7 +793,7 @@ def run_lmfit2(start, stop, *, debug=False, method='leastsq', **kwargs):
         raise Exception("error! no genes to fit!?")
     if len(kwargs) != len(fit_genes):
         raise Exception("error! incorrect genes names given??")
-    
+
     print(f"found {len(fit_genes)} genes to fit: {', '.join(fit_genes)}")
     fit_vals = []
 
@@ -737,12 +803,14 @@ def run_lmfit2(start, stop, *, debug=False, method='leastsq', **kwargs):
         n_trailing = stop - (len(timecourse.values) + n_leading)
         print(n_leading, n_trailing, len(timecourse.values))
         assert n_leading + n_trailing + len(timecourse.values) == stop - start + 1
-        fit_vals.append([0]*n_leading + list(timecourse.values) + [0]*n_trailing)
+        fit_vals.append([0] * n_leading + list(timecourse.values) + [0] * n_trailing)
         fit_gobj.append(vfg.get_gene(k))
 
     # flatten values
     fit_vals = list(chain.from_iterable(zip(*fit_vals)))
-    return run_lmfit(start, stop, fit_values=fit_vals, fit_genes=fit_gobj, debug=debug, method=method)
+    return run_lmfit(
+        start, stop, fit_values=fit_vals, fit_genes=fit_gobj, debug=debug, method=method
+    )
 
 
 def calc_response_1d(
@@ -765,13 +833,13 @@ def calc_response_1d(
 
     Run at timepoint with given delay.
     """
-    tissue = get_tissue(tissue_name)
+    tissue = vfn.get_tissue(tissue_name)
 
     set_tp = timepoint - delay
 
-    states_d = TissueGeneStates()
+    states_d = dinkum.TissueGeneStates()
     for gene_name, gsi in fixed_gene_states.items():
-        assert isinstance(gsi, GeneStateInfo)
+        assert isinstance(gsi, vfg.GeneStateInfo)
         states_d.set_gene_state(
             timepoint=set_tp,
             tissue_name=tissue_name,
@@ -789,7 +857,7 @@ def calc_response_1d(
     xvals = []
     yvals = []
     for activity in range(0, 101):
-        in_gsi = GeneStateInfo(activity, True)
+        in_gsi = vfg.GeneStateInfo(activity, True)
         states_d.set_gene_state(
             timepoint=set_tp,
             tissue_name=tissue_name,
@@ -827,12 +895,12 @@ def calc_response_2d(
     """
 
     set_tp = timepoint - delay
-    tissue = get_tissue(tissue_name)
+    tissue = vfn.get_tissue(tissue_name)
 
     # initialize states dict, optionally with preset fixed_gene states
-    states_d = TissueGeneStates()
+    states_d = dinkum.TissueGeneStates()
     for gene_name, gsi in fixed_gene_states.items():
-        assert isinstance(gsi, GeneStateInfo)
+        assert isinstance(gsi, vfg.GeneStateInfo)
         states_d.set_gene_state(
             timepoint=set_tp,
             tissue_name=tissue_name,
@@ -850,7 +918,7 @@ def calc_response_2d(
     # iterate across x and y ranges, setting gene activity
     arr = np.zeros((101, 101))
     for x_activity in range(0, 101):
-        x_gsi = GeneStateInfo(x_activity, True)
+        x_gsi = vfg.GeneStateInfo(x_activity, True)
         states_d.set_gene_state(
             timepoint=set_tp,
             tissue_name=tissue_name,
@@ -858,7 +926,7 @@ def calc_response_2d(
             state_info=x_gsi,
         )
         for y_activity in range(0, 101):
-            y_gsi = GeneStateInfo(y_activity, True)
+            y_gsi = vfg.GeneStateInfo(y_activity, True)
             states_d.set_gene_state(
                 timepoint=set_tp,
                 tissue_name=tissue_name,
