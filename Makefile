@@ -19,6 +19,7 @@ nbtest:
 	    notebooks/5-intermediate-custom-logic.ipynb \
 	    notebooks/6-decay-example.ipynb \
 	    notebooks/6-multi-level-activation.ipynb \
+	    notebooks/7-fit-functions.ipynb \
 	    notebooks/9-advanced-examples.ipynb
 
 nbconvert:
