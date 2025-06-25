@@ -27,5 +27,6 @@ testpaths = [
 
 [project.optional-dependencies]
 test = [
-  "nbval==0.11.0"
+  "nbval==0.11.0",
+  "pytest",
 ]
