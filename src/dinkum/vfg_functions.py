@@ -839,7 +839,7 @@ def calc_response_1d(
 
     states_d = dinkum.TissueGeneStates()
     for gene_name, gsi in fixed_gene_states.items():
-        assert isinstance(gsi, vfg.GeneStateInfo)
+        assert isinstance(gsi, vfg.GeneStateInfo), "fixed state values must be GeneStateInfo tuples"
         states_d.set_gene_state(
             timepoint=set_tp,
             tissue_name=tissue_name,
