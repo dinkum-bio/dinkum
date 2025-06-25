@@ -8,7 +8,7 @@ classifiers = [
 "Programming Language :: Python :: Implementation :: CPython",
 "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)"
     ]
-dependencies = ["Pillow==10.2.0", "pandas>=2,<3",
+dependencies = ["ipycanvas==0.13.3", "Pillow==10.2.0", "pandas>=2,<3",
     "matplotlib", "lmfit"]
 
 authors = [
