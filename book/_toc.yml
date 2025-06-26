@@ -4,6 +4,9 @@
 format: jb-book
 root: intro
 chapters:
+- file: 0-getting-started.ipynb
+- file: 1-positive-feedback.ipynb
+- file: 2-simple-oscillation.ipynb
 - file: custom-logistic-activator
 - file: custom-logistic-multiactivator
 - file: custom-logistic-repressor2
